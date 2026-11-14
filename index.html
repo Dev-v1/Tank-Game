@@ -31,7 +31,7 @@
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
       }
       .vignette { background: radial-gradient(ellipse at center, transparent 38%, rgba(7, 12, 12, .57) 100%); }
-      .topbar, .side-panel, .unit-deck, .toast { position: fixed; z-index: 2; }
+      .topbar, .side-panel, .upgrade-panel, .unit-deck, .toast { position: fixed; z-index: 2; }
       .topbar {
         top: 0; left: 0; right: 0; height: 70px; padding: 0 28px;
         display: flex; align-items: center; justify-content: space-between;
@@ -56,6 +56,19 @@
         top: 94px; left: 28px; width: 260px; padding: 18px;
         border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(12px);
       }
+      .upgrade-panel {
+        top: 94px; right: 28px; width: 236px; padding: 16px;
+        border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(12px);
+      }
+      .workshop-title { margin: 7px 0 4px; font: 700 20px "Barlow Condensed", sans-serif; letter-spacing: .06em; }
+      .workshop-copy { min-height: 28px; color: var(--muted); font: 9px/1.5 "DM Mono", monospace; }
+      .upgrade-button {
+        width: 100%; min-height: 34px; margin-top: 10px; padding: 0 8px;
+        border: 1px solid var(--lime); background: rgba(215, 240, 106, .08);
+        color: var(--lime); font: 9px "DM Mono", monospace; cursor: pointer;
+      }
+      .upgrade-button:hover:not(:disabled) { background: var(--lime); color: #172019; }
+      .upgrade-button:disabled { opacity: .42; cursor: not-allowed; }
       .eyebrow { color: var(--lime); font: 10px "DM Mono", monospace; letter-spacing: .19em; }
       .panel-title { margin: 7px 0 3px; font: 700 28px/.95 "Barlow Condensed", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
       .panel-copy { color: var(--muted); font-size: 11px; line-height: 1.5; }
@@ -117,7 +130,13 @@
       @media (max-width: 700px) {
         .topbar { height: 62px; padding: 0 14px; }
         .brand-caption, .status { display: none; }
+        .top-meta { gap: 6px; }
+        .counter { padding: 7px 6px; font-size: 8px; }
         .side-panel { top: 76px; left: 12px; width: 220px; padding: 13px; }
+        .upgrade-panel { top: 76px; right: 10px; width: min(205px, calc(100vw - 245px)); padding: 10px; }
+        .workshop-title { font-size: 16px; }
+        .workshop-copy { font-size: 8px; }
+        .upgrade-button { min-height: 28px; padding: 0 5px; font-size: 8px; }
         .panel-title { font-size: 24px; }
         .separator { margin: 10px 0; }
         .unit-deck { bottom: 10px; width: calc(100vw - 20px); padding: 9px; }
@@ -126,7 +145,8 @@
         .deck-hint { max-width: 55%; text-align: right; }
       }
       @media (max-width: 390px) {
-        .side-panel { width: 190px; }
+        .side-panel { width: 46vw; }
+        .upgrade-panel { right: 8px; width: 45vw; }
         .panel-copy { font-size: 10px; }
         .unit-card-name { font-size: 13px; }
       }
@@ -146,13 +166,14 @@
       </div>
       <div class="top-meta">
         <div class="status"><span class="status-dot"></span><span id="battleStatus">DEPLOYMENT LIVE</span></div>
-        <div class="counter">SECTOR&nbsp; <b id="levelCounter">01 / 03</b></div>
+        <div class="counter">CREDITS&nbsp; <b id="credits">0</b></div>
+        <div class="counter">SECTOR&nbsp; <b id="levelCounter">01 / 20</b></div>
         <div class="counter">UNITS&nbsp; <b id="deployedCount">00</b></div>
       </div>
     </header>
 
     <aside class="side-panel" aria-live="polite">
-      <div class="eyebrow" id="levelLabel">SECTOR 01 / 03</div>
+      <div class="eyebrow" id="levelLabel">SECTOR 01 / 20</div>
       <h1 class="panel-title" id="sectorName">Green Valley</h1>
       <div class="panel-copy" id="missionBrief">Deploy units, defeat the defenders, and destroy their base.</div>
       <div class="separator"></div>
@@ -173,6 +194,13 @@
       </div>
       <div class="separator"></div>
       <div class="deployment-status">YOUR FORCE <strong id="deployedSummary">0</strong> ACTIVE<br>HOSTILES <strong id="hostileCount">0</strong> REMAINING</div>
+    </aside>
+
+    <aside class="upgrade-panel" aria-label="Weapon upgrade workshop">
+      <div class="eyebrow">FIELD WORKSHOP</div>
+      <div class="workshop-title" id="workshopUnit">BATTLE TANK</div>
+      <div class="workshop-copy" id="weaponInfo">Select a unit to view its weapon rate.</div>
+      <button class="upgrade-button" id="rateUpgrade" type="button">UPGRADE WEAPON RATE</button>
     </aside>
 
     <section class="unit-deck" aria-label="Unit selection">
