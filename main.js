@@ -653,6 +653,10 @@ class MissileDefenseTower {
     this.hp = this.maxHp;
     this.range = 42;
     this.cooldownRemaining = 0;
+    this.nextLaunchSide = -1;
+    this.damage = 30;
+    this.projectileSpeed = 42;
+    this.attackCooldown = 2.7;
     this.root = new THREE.Group();
     this.root.position.set(base.root.position.x + offsetX, 0, base.root.position.z);
     scene.add(this.root);
@@ -686,8 +690,8 @@ class MissileDefenseTower {
     return new THREE.Vector3(this.root.position.x, 2.8, this.root.position.z);
   }
 
-  getLaunchPosition() {
-    return this.launcher.localToWorld(new THREE.Vector3(0, 1.8, 0));
+  getLaunchPosition(side = 0) {
+    return this.launcher.localToWorld(new THREE.Vector3(side * 0.4, 1.8, 0));
   }
 
   updateHealthBar(camera) {
@@ -1978,7 +1982,7 @@ class Battlefield {
       if (tower.cooldownRemaining > 0) continue;
 
       const towerPosition = tower.getPosition();
-      let target = null;
+      let incomingMissile = null;
       let closestDistance = tower.range;
       for (const projectile of this.projectiles) {
         if (projectile.weapon !== "missile"
@@ -1988,27 +1992,66 @@ class Battlefield {
         if (targetTeam !== tower.team) continue;
         const distance = towerPosition.distanceTo(projectile.mesh.position);
         if (distance < closestDistance) {
-          target = projectile;
+          incomingMissile = projectile;
           closestDistance = distance;
         }
       }
+
+      if (incomingMissile) {
+        incomingMissile.intercepted = true;
+        tower.aimAt(incomingMissile.mesh.position);
+        const mesh = this.createMissileMesh(tower.team);
+        mesh.position.copy(tower.getLaunchPosition(tower.nextLaunchSide));
+        tower.nextLaunchSide *= -1;
+        this.scene.add(mesh);
+        this.projectiles.push({
+          mesh,
+          owner: tower,
+          weapon: "interceptor",
+          targetProjectile: incomingMissile,
+          projectileSpeed: 52,
+          life: 4,
+          trailTimer: 0,
+        });
+        tower.cooldownRemaining = 1.65;
+        continue;
+      }
+
+      let target = null;
+      closestDistance = tower.range;
+      for (const unit of this.units) {
+        if (unit.team === tower.team || unit.hp <= 0) continue;
+        const distance = towerPosition.distanceTo(unit.root.position);
+        if (distance < closestDistance) {
+          target = unit;
+          closestDistance = distance;
+        }
+      }
+      const enemyBase = tower.team === "player" ? this.enemyBase : this.playerBase;
+      const baseDistance = towerPosition.distanceTo(enemyBase.root.position);
+      if (!target && baseDistance < closestDistance) target = enemyBase;
       if (!target) continue;
 
-      target.intercepted = true;
-      tower.aimAt(target.mesh.position);
+      tower.aimAt(target.getAimPoint());
       const mesh = this.createMissileMesh(tower.team);
-      mesh.position.copy(tower.getLaunchPosition());
+      mesh.position.copy(tower.getLaunchPosition(tower.nextLaunchSide));
+      tower.nextLaunchSide *= -1;
+      mesh.quaternion.setFromUnitVectors(
+        new THREE.Vector3(0, 0, 1),
+        target.getAimPoint().sub(mesh.position).normalize(),
+      );
       this.scene.add(mesh);
       this.projectiles.push({
         mesh,
         owner: tower,
-        weapon: "interceptor",
-        targetProjectile: target,
-        projectileSpeed: 52,
-        life: 4,
+        target,
+        weapon: "missile",
+        damage: tower.damage,
+        projectileSpeed: tower.projectileSpeed,
+        life: 5,
         trailTimer: 0,
       });
-      tower.cooldownRemaining = 1.65;
+      tower.cooldownRemaining = tower.attackCooldown;
     }
   }
 
