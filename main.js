@@ -51,6 +51,7 @@ const LEVELS = [
     sky: 0x899487,
     groundTint: 0xffffff,
     enemyTint: 0xc6533f,
+    weather: "clear",
     baseHealth: ENEMY_BASE_HEALTH_START,
     enemyStrength: 0.82,
     enemies: [
@@ -65,6 +66,7 @@ const LEVELS = [
     sky: 0x9b8c76,
     groundTint: 0xd5c29a,
     enemyTint: 0xd87a4f,
+    weather: "clear",
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE,
     enemyStrength: 1.12,
     enemies: [
@@ -82,6 +84,7 @@ const LEVELS = [
     sky: 0x737b80,
     groundTint: 0xc1c5c0,
     enemyTint: 0xff7655,
+    weather: "clear",
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE * 2,
     enemyStrength: 1.42,
     enemies: [
@@ -97,23 +100,36 @@ const LEVELS = [
     ],
   },
   ...[
-    ["Razorback Ridge", "Push through the highland defenses and secure the ridge.", 0x858d87, 0xb9c0b0, 0xc6533f],
-    ["Copperhead Strait", "Take your carrier group through the strait and break the enemy fleet.", 0x778d95, 0xffffff, 0x408c9c, true],
+    ["Razorback Ridge", "Push through the highland defenses and secure the ridge.", 0x858d87, 0xb9c0b0, 0xc6533f, false, "wind"],
+    ["Copperhead Strait", "Take your carrier group through the strait and break the enemy fleet.", 0x778d95, 0xffffff, 0x408c9c, true, "storm"],
     ["Frostbite Pass", "Advance through the frozen pass and destroy the command post.", 0x89949b, 0xb9c5c6, 0xb85c50, false, "snow"],
-    ["Sundown Range", "Clear the desert range of its remaining defenders.", 0x9a806d, 0xd2b78f, 0xd87a4f],
+    ["Sundown Range", "Clear the desert range of its remaining defenders.", 0x9a806d, 0xd2b78f, 0xd87a4f, false, "sandstorm"],
     ["Ironwood Basin", "Secure the basin and break the enemy's armored line.", 0x78867a, 0xaab39a, 0xc6533f],
-    ["Broken Arrow", "The enemy has regrouped. Defeat their counterattack.", 0x85817c, 0xb9b09e, 0xd16c4e],
-    ["Ashfall Crater", "Fight through the ash-covered perimeter to reach the base.", 0x747a7c, 0xaaa9a1, 0xc6533f],
-    ["Red Mesa", "Take the mesa before the defenders can reinforce it.", 0x9c8170, 0xc8a58d, 0xd87a4f],
-    ["Wolf's Run", "Push down the narrow valley and eliminate the hostile force.", 0x7d8779, 0xb0b69d, 0xc6533f],
-    ["Stormwatch Fleet", "Fight through the storm and destroy the opposing carrier group.", 0x707c82, 0xffffff, 0x408c9c, true],
-    ["Blackwater Coast", "Send submarines into the coastal waters and clear the hostile fleet.", 0x73847e, 0xffffff, 0x408c9c, true],
-    ["Cobalt Quarry", "Capture the quarry and clear its heavy defenses.", 0x78818a, 0xb5b7b2, 0xd16c4e],
-    ["Dead Man's Ridge", "Break the ridge defenses and keep your own base secure.", 0x827c72, 0xb5a98f, 0xc6533f],
-    ["Cinderworks", "Overrun the industrial perimeter and target the enemy base.", 0x797b7c, 0xb3aaa0, 0xd87a4f],
-    ["Thunderhead Channel", "Face the enemy fleet in open water and push onward.", 0x697880, 0xffffff, 0x408c9c, true],
-    ["Last Stand Armada", "The enemy is making its final stand at sea. Break through the fleet.", 0x778d95, 0xffffff, 0x408c9c, true],
-    ["Eagle's Nest", "Take the final stronghold and complete the campaign.", 0x737b80, 0xc1c5c0, 0xff7655],
+    ["Broken Arrow", "The enemy has regrouped. Defeat their counterattack.", 0x85817c, 0xb9b09e, 0xd16c4e, false, "rain"],
+    ["Ashfall Crater", "Fight through the ash-covered perimeter to reach the base.", 0x747a7c, 0xaaa9a1, 0xc6533f, false, "ash"],
+    ["Red Mesa", "Take the mesa before the defenders can reinforce it.", 0x9c8170, 0xc8a58d, 0xd87a4f, false, "sandstorm"],
+    ["Wolf's Run", "Push down the narrow valley and eliminate the hostile force.", 0x7d8779, 0xb0b69d, 0xc6533f, false, "fog"],
+    ["Stormwatch Fleet", "Fight through the storm and destroy the opposing carrier group.", 0x707c82, 0xffffff, 0x408c9c, true, "storm"],
+    ["Blackwater Coast", "Send submarines into the coastal waters and clear the hostile fleet.", 0x73847e, 0xffffff, 0x408c9c, true, "fog"],
+    ["Cobalt Quarry", "Capture the quarry and clear its heavy defenses.", 0x78818a, 0xb5b7b2, 0xd16c4e, false, "rain"],
+    ["Dead Man's Ridge", "Break the ridge defenses and keep your own base secure.", 0x827c72, 0xb5a98f, 0xc6533f, false, "wind"],
+    ["Cinderworks", "Overrun the industrial perimeter and target the enemy base.", 0x797b7c, 0xb3aaa0, 0xd87a4f, false, "ash"],
+    ["Thunderhead Channel", "Face the enemy fleet in open water and push onward.", 0x697880, 0xffffff, 0x408c9c, true, "storm"],
+    ["Last Stand Armada", "The enemy is making its final stand at sea. Break through the fleet.", 0x778d95, 0xffffff, 0x408c9c, true, "storm"],
+    ["Eagle's Nest", "Take the final stronghold and complete the campaign.", 0x737b80, 0xc1c5c0, 0xff7655, false, "clear"],
+    ["Whiteout Valley", "Cross the snow-blinded valley and break the fortified line.", 0x9ba9b2, 0xd7e0e0, 0xb85c50, false, "snow"],
+    ["Tundra Crossing", "Hold the frozen crossing while the enemy advances through deep snow.", 0x8597a5, 0xcbd6d9, 0xc6533f, false, "snow"],
+    ["Frozen Strait", "Take the fleet through icy waters under a freezing squall.", 0x738b99, 0xe7f0f0, 0x408c9c, true, "snow"],
+    ["Monsoon Delta", "Push through flooded lowlands in relentless monsoon rain.", 0x647d75, 0x9baa91, 0x408c9c, false, "rain"],
+    ["Typhoon Shelf", "Break the blockade as towering waves and gale-force rain hit the fleet.", 0x566d7a, 0xffffff, 0x408c9c, true, "storm"],
+    ["Dust Devil Flats", "Advance through violent dust devils and seize the desert outpost.", 0xa88a6d, 0xc8aa82, 0xd87a4f, false, "sandstorm"],
+    ["Sirocco Basin", "Survive the scorching sandstorm and destroy the enemy command post.", 0x9a755f, 0xc4a47f, 0xc6533f, false, "sandstorm"],
+    ["Mistwood Crossing", "Find the enemy through thick woodland fog and secure the crossing.", 0x687a72, 0x9da99a, 0xc6533f, false, "fog"],
+    ["Fogbound Sound", "Hunt the enemy fleet through dense coastal fog.", 0x647b83, 0xffffff, 0x408c9c, true, "fog"],
+    ["Ashen Fields", "Fight across the ash-covered plain beneath a dark falling haze.", 0x686b6a, 0x98948b, 0xc6533f, false, "ash"],
+    ["Sleetwater Strait", "Navigate the sleet-filled strait and break the naval defenses.", 0x74838b, 0xe2e8e8, 0x408c9c, true, "snow"],
+    ["Gale Force Ridge", "Climb the exposed ridge while crosswinds disrupt the advance.", 0x77827d, 0xb4b6a9, 0xd16c4e, false, "wind"],
+    ["Tempest Armada", "Defeat the final armada in a violent open-water storm.", 0x586d78, 0xffffff, 0x408c9c, true, "storm"],
   ].map(([name, brief, sky, groundTint, enemyTint, ocean = false, weather = "clear"], index) => ({
     name,
     brief,
@@ -136,6 +152,15 @@ const LEVELS = [
     }),
   })),
 ];
+const WEATHER_PRESETS = {
+  snow: { count: 420, color: 0xe9f3f5, size: 0.34, opacity: 0.82, fallSpeed: 4.5, windX: 3.2, windZ: 1.2, fogNear: 45, fogFar: 125 },
+  rain: { count: 650, color: 0xa9c3d0, size: 0.14, opacity: 0.58, fallSpeed: 19, windX: 2.4, windZ: 1.2, fogNear: 60, fogFar: 155 },
+  storm: { count: 820, color: 0xb9cbd2, size: 0.16, opacity: 0.7, fallSpeed: 25, windX: 8.5, windZ: -4.5, fogNear: 32, fogFar: 110 },
+  sandstorm: { count: 520, color: 0xc3a173, size: 0.32, opacity: 0.55, fallSpeed: 3.5, windX: 12, windZ: -5, fogNear: 24, fogFar: 82 },
+  fog: { count: 320, color: 0xc9d2d3, size: 0.82, opacity: 0.16, fallSpeed: 0.15, windX: 0.7, windZ: -0.35, fogNear: 18, fogFar: 85 },
+  wind: { count: 300, color: 0xc6c6aa, size: 0.25, opacity: 0.4, fallSpeed: 1.3, windX: 10, windZ: -3, fogNear: 65, fogFar: 145 },
+  ash: { count: 440, color: 0x9c988e, size: 0.25, opacity: 0.55, fallSpeed: 2.4, windX: 4.5, windZ: -1.5, fogNear: 35, fogFar: 115 },
+};
 const TREAD_LINK_COUNT = 40;
 const TREAD_LINK_GEOMETRY = new THREE.BoxGeometry(0.48, 0.14, 0.17);
 const TREAD_MATERIAL = standardMaterial(0x303630, { roughness: 0.96, metalness: 0.08 });
@@ -263,6 +288,7 @@ class Unit {
     this.exhaustTimer = Math.random() * 0.2;
     this.movementSpeed = 0;
     this.driftIntensity = 0;
+    this.movementVelocity = new THREE.Vector2();
     this.scene.add(this.root);
     this.healthBar = createHealthBar(scene, this.isEnemy ? 0xff7655 : 0xd7f06a, 2.6);
   }
@@ -429,7 +455,10 @@ class Unit {
       separation.set(Math.cos(angle), Math.sin(angle));
     }
 
-    if (outsideWeaponRange || separation.lengthSq() > 0) {
+    const snowTraction = battlefield.level.weather === "snow"
+      && !this.config.air
+      && this.config.domain !== "water";
+    if (outsideWeaponRange || separation.lengthSq() > 0 || snowTraction) {
       const pursuitWeight = hasCrowdedUnit ? 0.35 : 1;
       const separationWeight = hasCrowdedUnit ? 2.6 : 1.4;
       const steerX = (outsideWeaponRange && distance > 0 ? (dx / distance) * pursuitWeight : 0)
@@ -437,7 +466,24 @@ class Unit {
       const steerZ = (outsideWeaponRange && distance > 0 ? (dz / distance) * pursuitWeight : 0)
         + separation.y * separationWeight;
       const steerLength = Math.hypot(steerX, steerZ);
-      if (steerLength > 0.001) {
+      if (snowTraction) {
+        const desiredVelocity = new THREE.Vector2();
+        if (steerLength > 0.001) {
+          desiredVelocity.set(steerX / steerLength, steerZ / steerLength)
+            .multiplyScalar(this.config.speed * 0.78);
+        }
+        this.movementVelocity.lerp(desiredVelocity, Math.min(1, delta * 2.2));
+        const velocityLength = this.movementVelocity.length();
+        let travel = velocityLength * delta;
+        if (outsideWeaponRange) {
+          const desiredDistance = this.config.range * 0.82;
+          travel = Math.min(travel, Math.max(0, distance - desiredDistance));
+        }
+        if (velocityLength > 0.001) {
+          this.root.position.x += (this.movementVelocity.x / velocityLength) * travel;
+          this.root.position.z += (this.movementVelocity.y / velocityLength) * travel;
+        }
+      } else if (steerLength > 0.001) {
         const desiredDistance = this.config.range * 0.82;
         const targetTravel = outsideWeaponRange ? Math.max(0, distance - desiredDistance) : Infinity;
         const separationTravel = this.config.speed * delta * Math.min(1, separation.length());
@@ -1211,6 +1257,7 @@ class Battlefield {
     this.units = [];
     this.projectiles = [];
     this.smokeParticles = [];
+    this.weatherEffect = null;
     this.missileDefenseTowers = [];
     this.reinforcementTimer = 0;
     this.reinforcementWave = 0;
@@ -1230,7 +1277,7 @@ class Battlefield {
     this.createBases();
     this.createUnitMenu();
     this.bindEvents();
-    this.loadLevel(0, true);
+    this.loadLevel(0);
     if (this.progressWarning) this.showToast("CREDITS COULD NOT BE LOADED — STARTING FRESH");
     this.animate();
   }
@@ -1619,14 +1666,14 @@ class Battlefield {
     });
     $("messagePrimary").addEventListener("click", () => {
       if (this.mode === "defeat") {
-        this.loadLevel(this.levelIndex, true);
+        this.loadLevel(this.levelIndex);
       } else if (this.mode === "victory" && this.levelIndex < LEVELS.length - 1) {
         this.loadLevel(this.levelIndex + 1);
       } else {
-        this.loadLevel(0, true);
+        this.loadLevel(0);
       }
     });
-    $("messageSecondary").addEventListener("click", () => this.loadLevel(0, true));
+    $("messageSecondary").addEventListener("click", () => this.loadLevel(0));
     $("rateUpgrade").addEventListener("click", () => this.purchaseWeaponUpgrade());
     window.addEventListener("resize", () => this.resize());
   }
@@ -1771,7 +1818,7 @@ class Battlefield {
     return unit;
   }
 
-  loadLevel(index, resetCampaign = false) {
+  loadLevel(index) {
     if (!LEVELS[index]) throw new RangeError(`Unknown campaign sector: ${index + 1}`);
     this.levelIndex = index;
     this.level = LEVELS[index];
@@ -1783,44 +1830,14 @@ class Battlefield {
     this.mode = "battle";
     $("missionMessage").hidden = true;
     this.clearProjectiles();
-
-    if (resetCampaign) {
-      this.clearUnits();
-    } else {
-      this.clearUnits("enemy");
-      this.units = this.units.filter((unit) => {
-        const config = UNIT_CATALOG.find((entry) => entry.id === unit.config.id);
-        if (unit.team !== "player" || unit.hp <= 0 || !this.isUnitAvailable(config)) {
-          unit.destroy();
-          return false;
-        }
-        return true;
-      });
-      const repositioningUnits = new Set(this.units);
-      this.units.forEach((unit, i) => {
-        const height = unit.config.air ? 3.1 : unit.config.id === "submarine" ? -0.35 : 0;
-        const desiredPosition = new THREE.Vector3(
-          ((i % 5) - 2) * 7,
-          height,
-          18 + Math.floor(i / 5) * 7,
-        );
-        const spawnPosition = this.findOpenSpawnPosition(
-          desiredPosition,
-          unit.config.id,
-          "player",
-          repositioningUnits,
-        );
-        repositioningUnits.delete(unit);
-        unit.root.position.copy(spawnPosition);
-        unit.root.rotation.y = Math.PI;
-      });
-    }
+    this.clearUnits();
 
     this.enemyBase.resetHealth(this.level.baseHealth);
     this.playerBase.resetHealth(PLAYER_BASE_HEALTH + index * PLAYER_BASE_HEALTH_INCREASE);
     for (const tower of this.missileDefenseTowers) tower.resetHealth(this.camera);
     this.scene.background.setHex(this.level.sky);
     this.scene.fog.color.setHex(this.level.sky);
+    this.setWeather(this.level.weather ?? "clear");
     this.ground.material.map = this.level.ocean ? this.waterTexture : this.landTexture;
     this.ground.material.bumpMap = this.level.ocean ? null : this.landBumpTexture;
     this.ground.material.color.setHex(this.level.groundTint);
@@ -1842,6 +1859,64 @@ class Battlefield {
       this.spawnUnit(spawn.type, "enemy", new THREE.Vector3(spawn.x, 0, spawn.z));
     }
     this.refreshHud();
+  }
+
+  setWeather(weather) {
+    if (this.weatherEffect) {
+      this.scene.remove(this.weatherEffect.points);
+      this.weatherEffect.points.geometry.dispose();
+      this.weatherEffect.points.material.dispose();
+      this.weatherEffect = null;
+    }
+
+    const preset = WEATHER_PRESETS[weather];
+    if (weather !== "clear" && !preset) throw new RangeError(`Unknown weather: ${weather}`);
+    this.scene.fog.near = preset?.fogNear ?? 95;
+    this.scene.fog.far = preset?.fogFar ?? 190;
+    if (!preset) return;
+
+    const positions = new Float32Array(preset.count * 3);
+    for (let i = 0; i < preset.count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * FIELD_WIDTH;
+      positions[i * 3 + 1] = Math.random() * 36 + 1;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * FIELD_DEPTH;
+    }
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({
+      color: preset.color,
+      size: preset.size,
+      transparent: true,
+      opacity: preset.opacity,
+      depthWrite: false,
+      sizeAttenuation: true,
+    });
+    const points = new THREE.Points(geometry, material);
+    points.frustumCulled = false;
+    this.scene.add(points);
+    this.weatherEffect = { points, preset };
+  }
+
+  updateWeather(delta) {
+    if (!this.weatherEffect) return;
+    const { points, preset } = this.weatherEffect;
+    const positions = points.geometry.attributes.position.array;
+    const halfWidth = FIELD_WIDTH / 2;
+    const halfDepth = FIELD_DEPTH / 2;
+    for (let i = 0; i < preset.count; i++) {
+      const offset = i * 3;
+      positions[offset] += preset.windX * delta;
+      positions[offset + 1] -= preset.fallSpeed * delta;
+      positions[offset + 2] += preset.windZ * delta;
+      if (positions[offset + 1] < 0
+        || Math.abs(positions[offset]) > halfWidth
+        || Math.abs(positions[offset + 2]) > halfDepth) {
+        positions[offset] = (Math.random() - 0.5) * FIELD_WIDTH;
+        positions[offset + 1] = 24 + Math.random() * 20;
+        positions[offset + 2] = (Math.random() - 0.5) * FIELD_DEPTH;
+      }
+    }
+    points.geometry.attributes.position.needsUpdate = true;
   }
 
   clearUnits(team) {
@@ -2277,6 +2352,7 @@ class Battlefield {
     requestAnimationFrame(() => this.animate());
     const delta = Math.min(this.clock.getDelta(), 0.05);
     this.updateSmokeParticles(delta);
+    this.updateWeather(delta);
     if (this.mode === "battle") {
       this.updateEnemyReinforcements(delta);
       for (const unit of this.units) unit.update(delta, this);
