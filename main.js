@@ -16,12 +16,34 @@ const UNIT_CATALOG = [
   { id: "tank", name: "Main battle tank", shortName: "Battle tank", speed: 5.2, hp: 180, damage: 30, range: 18, cooldown: 1.1, projectileSpeed: 26, detectionRange: 34, color: 0x829264, domain: "land", weapon: "cannon" },
   { id: "scout", name: "Recon scout", shortName: "Recon scout", speed: 8.5, hp: 90, damage: 14, range: 13, cooldown: 0.65, projectileSpeed: 30, detectionRange: 30, color: 0x9aab70, domain: "land", weapon: "gun" },
   { id: "artillery", name: "Field artillery", shortName: "Artillery", speed: 3.4, hp: 160, damage: 48, range: 30, cooldown: 2.2, projectileSpeed: 24, detectionRange: 42, color: 0x777e68, domain: "land", weapon: "shell" },
-  { id: "helicopter", name: "Attack helicopter", shortName: "Helicopter", speed: 9.2, hp: 130, damage: 22, range: 20, cooldown: 0.8, projectileSpeed: 30, detectionRange: 36, color: 0x73845d, air: true, domain: "air", weapon: "missile" },
+  { id: "ifv", name: "Infantry fighting vehicle", shortName: "IFV", speed: 6.4, hp: 165, damage: 8, range: 19, cooldown: 0.34, projectileSpeed: 38, detectionRange: 36, color: 0x87916a, domain: "land", weapon: "gun", secondaryWeapon: "gun", secondaryDamage: 4, secondaryCooldown: 0.62, secondaryRange: 14, secondaryProjectileSpeed: 36 },
+  { id: "apc", name: "Armored personnel carrier", shortName: "APC", speed: 6.8, hp: 205, damage: 4, range: 16, cooldown: 0.9, projectileSpeed: 34, detectionRange: 34, color: 0x78846a, domain: "land", weapon: "gun", volleyCount: 3, muzzleOffsets: [[-0.62, 1.4, 1.15], [0, 1.55, 1.3], [0.62, 1.4, 1.15]] },
+  { id: "mlrs", name: "Rocket artillery", shortName: "MLRS", speed: 2.8, hp: 115, damage: 14, range: 42, cooldown: 3.2, projectileSpeed: 32, detectionRange: 50, color: 0x737b68, domain: "land", weapon: "missile", volleyCount: 4, muzzleOffsets: [[-0.72, 1.8, -0.5], [-0.24, 1.8, -0.5], [0.24, 1.8, -0.5], [0.72, 1.8, -0.5]] },
+  { id: "engineer", name: "Combat engineer vehicle", shortName: "Engineer", speed: 4.8, hp: 175, damage: 6, range: 15, cooldown: 0.55, projectileSpeed: 32, detectionRange: 32, color: 0x8c8968, domain: "land", weapon: "gun", supportHeal: 14, supportRange: 9, supportCooldown: 2.4 },
+  { id: "helicopter", name: "Attack helicopter", shortName: "Helicopter", speed: 9.2, hp: 130, damage: 4, range: 24, cooldown: 0.4, projectileSpeed: 48, detectionRange: 36, color: 0x73845d, air: true, domain: "air", weapon: "gun", muzzleOffsets: [[0, -0.28, 1.85]], secondaryWeapon: "missile", secondaryDamage: 18, secondaryCooldown: 5.2, secondaryRange: 24, secondaryProjectileSpeed: 34, secondaryMuzzleOffsets: [[-1.1, -0.2, 0.4], [1.1, -0.2, 0.4]] },
+  { id: "reconDrone", name: "Recon drone", shortName: "Recon drone", speed: 10, hp: 75, damage: 3, range: 17, cooldown: 0.32, projectileSpeed: 42, detectionRange: 58, color: 0x7d928a, air: true, domain: "air", weapon: "gun", muzzleOffsets: [[0, -0.23, 1.17]] },
   { id: "fighterJet", name: "Fighter jet", shortName: "Fighter jet", speed: 12, hp: 115, damage: 28, range: 24, cooldown: 0.72, projectileSpeed: 38, detectionRange: 42, color: 0x758697, air: true, domain: "air", weapon: "bomb" },
+  { id: "amphibious", name: "Amphibious assault vehicle", shortName: "Amphibious", speed: 5.4, hp: 190, damage: 25, range: 18, cooldown: 1.05, projectileSpeed: 27, detectionRange: 34, color: 0x6f897d, domain: "amphibious", weapon: "cannon" },
   { id: "sam", name: "Surface-to-air missile launcher", shortName: "SAM launcher", speed: 3.2, hp: 155, damage: 42, range: 40, cooldown: 0.8, projectileSpeed: 34, detectionRange: 48, color: 0x707a61, domain: "land", weapon: "missile" },
   { id: "carrier", name: "Aircraft carrier", shortName: "Carrier", speed: 2.5, hp: 620, damage: 44, range: 26, cooldown: 2.4, projectileSpeed: 25, detectionRange: 38, color: 0x65736d, domain: "water", weapon: "missile", secondaryWeapon: "gun", secondaryDamage: 9, secondaryCooldown: 0.35, secondaryRange: 15, secondaryProjectileSpeed: 36 },
   { id: "submarine", name: "Attack submarine", shortName: "Submarine", speed: 4.4, hp: 230, damage: 36, range: 19, cooldown: 1.45, projectileSpeed: 28, detectionRange: 32, color: 0x485954, domain: "water", weapon: "torpedo", secondaryWeapon: "gun", secondaryDamage: 6, secondaryCooldown: 0.4, secondaryRange: 12, secondaryProjectileSpeed: 34 },
 ];
+const UNIT_SPACING_RADII = {
+  tank: 2,
+  scout: 1.5,
+  artillery: 2.3,
+  ifv: 2.2,
+  apc: 2.5,
+  mlrs: 2.6,
+  engineer: 2.4,
+  helicopter: 3.2,
+  reconDrone: 1.4,
+  fighterJet: 3.8,
+  amphibious: 2.7,
+  sam: 2.7,
+  carrier: 6.2,
+  submarine: 4,
+};
 const LEVELS = [
   {
     name: "Green Valley",
@@ -77,7 +99,7 @@ const LEVELS = [
   ...[
     ["Razorback Ridge", "Push through the highland defenses and secure the ridge.", 0x858d87, 0xb9c0b0, 0xc6533f],
     ["Copperhead Strait", "Take your carrier group through the strait and break the enemy fleet.", 0x778d95, 0xffffff, 0x408c9c, true],
-    ["Frostbite Pass", "Advance through the frozen pass and destroy the command post.", 0x89949b, 0xb9c5c6, 0xb85c50],
+    ["Frostbite Pass", "Advance through the frozen pass and destroy the command post.", 0x89949b, 0xb9c5c6, 0xb85c50, false, "snow"],
     ["Sundown Range", "Clear the desert range of its remaining defenders.", 0x9a806d, 0xd2b78f, 0xd87a4f],
     ["Ironwood Basin", "Secure the basin and break the enemy's armored line.", 0x78867a, 0xaab39a, 0xc6533f],
     ["Broken Arrow", "The enemy has regrouped. Defeat their counterattack.", 0x85817c, 0xb9b09e, 0xd16c4e],
@@ -92,19 +114,20 @@ const LEVELS = [
     ["Thunderhead Channel", "Face the enemy fleet in open water and push onward.", 0x697880, 0xffffff, 0x408c9c, true],
     ["Last Stand Armada", "The enemy is making its final stand at sea. Break through the fleet.", 0x778d95, 0xffffff, 0x408c9c, true],
     ["Eagle's Nest", "Take the final stronghold and complete the campaign.", 0x737b80, 0xc1c5c0, 0xff7655],
-  ].map(([name, brief, sky, groundTint, enemyTint, ocean = false], index) => ({
+  ].map(([name, brief, sky, groundTint, enemyTint, ocean = false, weather = "clear"], index) => ({
     name,
     brief,
     sky,
     groundTint,
     enemyTint,
     ocean,
+    weather,
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE * (index + 3),
-    enemyStrength: 1.45 + index * 0.025,
+    enemyStrength: 1.5 + index * 0.06,
     enemies: Array.from({ length: 7 + Math.floor(index / 3) }, (_, unitIndex) => {
       const enemyTypes = ocean
-        ? ["carrier", "submarine", "fighterJet", "helicopter"]
-        : ["tank", "artillery", "scout", "helicopter", "fighterJet", "sam"];
+        ? ["carrier", "submarine", "fighterJet", "helicopter", "reconDrone", "amphibious"]
+        : ["tank", "artillery", "scout", "ifv", "apc", "mlrs", "engineer", "helicopter", "reconDrone", "fighterJet", "amphibious", "sam"];
       return {
         type: enemyTypes[(unitIndex + index) % enemyTypes.length],
         x: ((unitIndex % 4) - 1.5) * 8,
@@ -165,18 +188,28 @@ const TAIL_ROTOR_BLADE_GEOMETRY = makeBladeGeometry(1.05, 0.28);
 const ROTOR_BLADE_MATERIAL = standardMaterial(0x303832, { side: THREE.DoubleSide, metalness: 0.22 });
 const ROTOR_TRIM_MATERIAL = standardMaterial(0x9ba18c, { side: THREE.DoubleSide, metalness: 0.35 });
 const ROTOR_TRIM_GEOMETRY = new THREE.BoxGeometry(0.035, 0.035, 3.2);
+const EXHAUST_PIPE_GEOMETRY = new THREE.CylinderGeometry(0.11, 0.15, 0.46, 10);
+const EXHAUST_CAP_GEOMETRY = new THREE.CylinderGeometry(0.16, 0.16, 0.07, 10);
+const EXHAUST_SMOKE_GEOMETRY = new THREE.SphereGeometry(1, 10, 8);
+const EXHAUST_PIPE_MATERIAL = standardMaterial(0x303632, { metalness: 0.55, roughness: 0.48 });
+const EXHAUST_CAP_MATERIAL = standardMaterial(0x121614, { metalness: 0.12, roughness: 0.86 });
 const SHARED_GEOMETRIES = new Set([
   TREAD_LINK_GEOMETRY,
   TREAD_LUG_GEOMETRY,
   MAIN_ROTOR_BLADE_GEOMETRY,
   TAIL_ROTOR_BLADE_GEOMETRY,
   ROTOR_TRIM_GEOMETRY,
+  EXHAUST_PIPE_GEOMETRY,
+  EXHAUST_CAP_GEOMETRY,
+  EXHAUST_SMOKE_GEOMETRY,
 ]);
 const SHARED_MATERIALS = new Set([
   TREAD_MATERIAL,
   TREAD_LUG_MATERIAL,
   ROTOR_BLADE_MATERIAL,
   ROTOR_TRIM_MATERIAL,
+  EXHAUST_PIPE_MATERIAL,
+  EXHAUST_CAP_MATERIAL,
 ]);
 
 function createHealthBar(scene, color, width) {
@@ -205,37 +238,96 @@ function updateHealthBar(bar, position, hp, maxHp, camera) {
 
 // The shared movement contract keeps each model free to define its own visuals.
 class Unit {
+  static nextSeparationId = 0;
+
   constructor(scene, config, position, team, carrier = null, launchOffset = null) {
     this.scene = scene;
     this.config = config;
     this.team = team;
     this.isEnemy = team === "enemy";
+    this.separationId = Unit.nextSeparationId++;
     this.root = new THREE.Group();
     this.root.position.copy(position);
     this.hp = config.hp;
     this.maxHp = config.hp;
     this.cooldownRemaining = 0;
     this.secondaryCooldownRemaining = 0;
+    this.supportCooldownRemaining = 0;
     this.carrier = carrier;
     this.carrierLaunch = Boolean(carrier);
     this.carrierLaunchOffset = launchOffset ?? new THREE.Vector3();
     this.carrierLaunchElapsed = 0;
     this.destroyed = false;
     this.buildModel();
+    this.exhaustPorts = this.createExhaustPipes();
+    this.exhaustTimer = Math.random() * 0.2;
+    this.movementSpeed = 0;
+    this.driftIntensity = 0;
     this.scene.add(this.root);
     this.healthBar = createHealthBar(scene, this.isEnemy ? 0xff7655 : 0xd7f06a, 2.6);
   }
 
   buildModel() {}
 
+  createExhaustPipes() {
+    let outlet;
+    let scale = 1;
+    let horizontal = false;
+    if (this.config.id === "fighterJet") {
+      outlet = [0.62, -0.34, -2.62];
+      scale = 0.8;
+      horizontal = true;
+    } else if (this.config.id === "helicopter") {
+      outlet = [-0.38, 0.52, -0.9];
+      scale = 0.95;
+      horizontal = true;
+    } else if (this.config.id === "reconDrone") {
+      outlet = [0, 0.02, -0.7];
+      scale = 0.6;
+      horizontal = true;
+    } else if (this.config.id === "carrier") {
+      outlet = [2.7, 1.45, -9.1];
+      scale = 1.2;
+    } else if (this.config.id === "submarine") {
+      outlet = [0, 1.9, -1.1];
+      scale = 0.72;
+    } else if (this.config.id === "scout") {
+      outlet = [0.6, 0.98, -1.48];
+      scale = 0.85;
+    } else {
+      outlet = [0.82, 1.08, -1.9];
+    }
+
+    const [x, y, z] = outlet;
+    const pipe = new THREE.Mesh(EXHAUST_PIPE_GEOMETRY, EXHAUST_PIPE_MATERIAL);
+    pipe.position.set(x, y, z);
+    pipe.scale.setScalar(scale);
+    if (horizontal) pipe.rotation.x = -Math.PI / 2;
+    else pipe.rotation.x = -0.18;
+    this.root.add(pipe);
+
+    const cap = new THREE.Mesh(EXHAUST_CAP_GEOMETRY, EXHAUST_CAP_MATERIAL);
+    cap.position.set(x, y + (horizontal ? 0 : 0.24 * scale), z - (horizontal ? 0.24 * scale : 0.04));
+    if (horizontal) cap.rotation.x = -Math.PI / 2;
+    cap.scale.setScalar(scale);
+    this.root.add(cap);
+    return [new THREE.Vector3(
+      x,
+      y + (horizontal ? 0 : 0.28 * scale),
+      z - (horizontal ? 0.28 * scale : 0.08),
+    )];
+  }
+
   update(delta, battlefield) {
     if (this.hp <= 0) return;
+    const previousPosition = this.root.position.clone();
     this.cooldownRemaining = Math.max(0, this.cooldownRemaining - delta);
     this.secondaryCooldownRemaining = Math.max(0, this.secondaryCooldownRemaining - delta);
+    this.supportCooldownRemaining = Math.max(0, this.supportCooldownRemaining - delta);
 
     let target = null;
     let closestDistance = this.config.detectionRange;
-    for (const candidate of battlefield.units) {
+    for (const candidate of [...battlefield.units, ...battlefield.missileDefenseTowers]) {
       if (candidate.team === this.team || candidate.hp <= 0) continue;
       const distance = this.root.position.distanceTo(candidate.root.position);
       if (distance < closestDistance) {
@@ -253,38 +345,135 @@ class Unit {
     const distance = Math.hypot(dx, dz);
     this.root.rotation.y = Math.atan2(dx, dz);
 
+    if (this.config.supportHeal && this.supportCooldownRemaining === 0) {
+      let repairTarget = null;
+      let lowestHealthRatio = 1;
+      for (const ally of battlefield.units) {
+        if (ally === this || ally.team !== this.team || ally.hp <= 0 || ally.hp >= ally.maxHp) continue;
+        if (this.root.position.distanceTo(ally.root.position) > this.config.supportRange) continue;
+        const healthRatio = ally.hp / ally.maxHp;
+        if (healthRatio < lowestHealthRatio) {
+          repairTarget = ally;
+          lowestHealthRatio = healthRatio;
+        }
+      }
+      if (repairTarget) {
+        repairTarget.hp = Math.min(repairTarget.maxHp, repairTarget.hp + this.config.supportHeal);
+        repairTarget.updateHealthBar(battlefield.camera);
+        this.supportCooldownRemaining = this.config.supportCooldown;
+      }
+    }
+
     if (distance <= this.config.range) {
       if (this.cooldownRemaining === 0 && target.hp > 0) {
-        battlefield.spawnProjectile(this, target);
+        const volleyCount = this.config.volleyCount ?? 1;
+        for (let shot = 0; shot < volleyCount; shot++) {
+          const offsetValues = this.config.muzzleOffsets?.[shot % this.config.muzzleOffsets.length];
+          battlefield.spawnProjectile(
+            this,
+            target,
+            this.config.weapon,
+            this.config.damage,
+            this.config.projectileSpeed,
+            offsetValues ? new THREE.Vector3(...offsetValues) : null,
+          );
+        }
         this.cooldownRemaining = this.config.cooldown;
       }
     }
     if (this.config.secondaryWeapon && distance <= this.config.secondaryRange) {
       if (this.secondaryCooldownRemaining === 0 && target.hp > 0) {
-        battlefield.spawnProjectile(
-          this,
-          target,
-          this.config.secondaryWeapon,
-          this.config.secondaryDamage,
-          this.config.secondaryProjectileSpeed,
-        );
+        const offsets = this.config.secondaryMuzzleOffsets ?? [null];
+        for (const offsetValues of offsets) {
+          battlefield.spawnProjectile(
+            this,
+            target,
+            this.config.secondaryWeapon,
+            this.config.secondaryDamage / offsets.length,
+            this.config.secondaryProjectileSpeed,
+            offsetValues ? new THREE.Vector3(...offsetValues) : null,
+          );
+        }
         this.secondaryCooldownRemaining = this.config.secondaryCooldown;
       }
     }
-    if (distance > Math.max(
+    const desiredRange = Math.max(
       this.config.range,
       this.config.secondaryWeapon ? this.config.secondaryRange : 0,
-    )) {
-      const desiredDistance = this.config.range * 0.82;
-      const travel = Math.min(this.config.speed * delta, Math.max(0, distance - desiredDistance));
-      if (travel > 0) {
-        this.root.position.x += (dx / distance) * travel;
-        this.root.position.z += (dz / distance) * travel;
+    );
+    const outsideWeaponRange = distance > desiredRange;
+    const separation = new THREE.Vector2();
+    let hasCrowdedUnit = false;
+    for (const other of battlefield.units) {
+      if (other === this || other.hp <= 0) continue;
+      const awayX = this.root.position.x - other.root.position.x;
+      const awayZ = this.root.position.z - other.root.position.z;
+      const otherDistance = Math.hypot(awayX, awayZ);
+      const separationDistance = (UNIT_SPACING_RADII[this.config.id] ?? 2)
+        + (UNIT_SPACING_RADII[other.config.id] ?? 2) + 1.4;
+      if (otherDistance >= separationDistance) continue;
+      hasCrowdedUnit = true;
+      if (otherDistance > 0.001) {
+        const weight = Math.min(1.5, (separationDistance - otherDistance) / separationDistance);
+        separation.x += (awayX / otherDistance) * weight;
+        separation.y += (awayZ / otherDistance) * weight;
+      } else {
+        const angle = (this.separationId * 2.399963229728653 + other.separationId) % (Math.PI * 2);
+        const direction = this.separationId < other.separationId ? 1 : -1;
+        separation.x += Math.cos(angle) * direction;
+        separation.y += Math.sin(angle) * direction;
       }
     }
+    if (hasCrowdedUnit && separation.lengthSq() < 0.000001) {
+      const angle = this.separationId * 2.399963229728653;
+      separation.set(Math.cos(angle), Math.sin(angle));
+    }
+
+    if (outsideWeaponRange || separation.lengthSq() > 0) {
+      const pursuitWeight = hasCrowdedUnit ? 0.35 : 1;
+      const separationWeight = hasCrowdedUnit ? 2.6 : 1.4;
+      const steerX = (outsideWeaponRange && distance > 0 ? (dx / distance) * pursuitWeight : 0)
+        + separation.x * separationWeight;
+      const steerZ = (outsideWeaponRange && distance > 0 ? (dz / distance) * pursuitWeight : 0)
+        + separation.y * separationWeight;
+      const steerLength = Math.hypot(steerX, steerZ);
+      if (steerLength > 0.001) {
+        const desiredDistance = this.config.range * 0.82;
+        const targetTravel = outsideWeaponRange ? Math.max(0, distance - desiredDistance) : Infinity;
+        const separationTravel = this.config.speed * delta * Math.min(1, separation.length());
+        const travel = outsideWeaponRange
+          ? Math.min(this.config.speed * delta, targetTravel)
+          : separationTravel;
+        this.root.position.x += (steerX / steerLength) * travel;
+        this.root.position.z += (steerZ / steerLength) * travel;
+      }
+    }
+    const fieldMargin = UNIT_SPACING_RADII[this.config.id] ?? 2;
+    this.root.position.x = THREE.MathUtils.clamp(
+      this.root.position.x,
+      -FIELD_WIDTH / 2 + fieldMargin,
+      FIELD_WIDTH / 2 - fieldMargin,
+    );
+    this.root.position.z = THREE.MathUtils.clamp(
+      this.root.position.z,
+      -FIELD_DEPTH / 2 + fieldMargin,
+      FIELD_DEPTH / 2 - fieldMargin,
+    );
 
     this.updateCarrierTakeoff(delta);
+    const movementX = this.root.position.x - previousPosition.x;
+    const movementZ = this.root.position.z - previousPosition.z;
+    const movementDistance = Math.hypot(movementX, movementZ);
+    this.movementSpeed = delta > 0 ? movementDistance / delta : 0;
+    const lateralMovement = movementX * Math.cos(this.root.rotation.y)
+      - movementZ * Math.sin(this.root.rotation.y);
+    this.driftIntensity = THREE.MathUtils.clamp(
+      Math.abs(lateralMovement) / Math.max(this.config.speed * delta, 0.001),
+      0,
+      1,
+    );
     this.animate(delta);
+    battlefield.updateUnitExhaust(this, delta);
     this.updateHealthBar(battlefield.camera);
   }
 
@@ -296,8 +485,9 @@ class Unit {
       this.root.position.z = this.carrier.root.position.z + this.carrierLaunchOffset.z;
     }
     const cruiseHeight = this.config.id === "helicopter" ? 3.1 : 4;
+    const flightHeight = this.config.id === "reconDrone" ? 4.8 : cruiseHeight;
     const progress = THREE.MathUtils.clamp(this.carrierLaunchElapsed / 1.2, 0, 1);
-    this.root.position.y = THREE.MathUtils.lerp(1.2, cruiseHeight, progress);
+    this.root.position.y = THREE.MathUtils.lerp(1.2, flightHeight, progress);
     if (progress === 1) {
       this.carrierLaunch = false;
       this.carrier = null;
@@ -409,6 +599,89 @@ class BattleBase {
   }
 }
 
+class MissileDefenseTower {
+  constructor(scene, base, offsetX) {
+    this.team = base.isEnemy ? "enemy" : "player";
+    this.isEnemy = base.isEnemy;
+    this.maxHp = 260;
+    this.hp = this.maxHp;
+    this.range = 42;
+    this.cooldownRemaining = 0;
+    this.root = new THREE.Group();
+    this.root.position.set(base.root.position.x + offsetX, 0, base.root.position.z);
+    scene.add(this.root);
+
+    const body = standardMaterial(this.team === "enemy" ? 0x794b40 : 0x596947, { metalness: 0.28 });
+    const dark = standardMaterial(0x252b27, { metalness: 0.42 });
+    const missile = standardMaterial(this.team === "enemy" ? 0xb25b48 : 0x9ba38b, { metalness: 0.4 });
+    addBox(this.root, dark, [1.8, 0.42, 1.8], [0, 0.21, 0]);
+    addBox(this.root, body, [1.05, 1.35, 1.05], [0, 1.05, 0]);
+
+    this.launcher = new THREE.Group();
+    this.launcher.position.set(0, 1.72, 0);
+    this.root.add(this.launcher);
+    addCylinder(this.launcher, dark, 0.55, 0.62, 0.32, [0, 0.15, 0]);
+    addBox(this.launcher, body, [1.55, 0.42, 1.4], [0, 0.52, 0]);
+    for (const side of [-1, 1]) {
+      addCylinder(this.launcher, dark, 0.18, 0.18, 1.15, [side * 0.4, 1.3, 0], 10);
+      const tip = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.32, 10), missile);
+      tip.position.set(side * 0.4, 2.03, 0);
+      this.launcher.add(tip);
+    }
+    addBox(this.launcher, missile, [0.72, 0.16, 0.52], [0, 0.86, -0.5]);
+    this.healthBar = createHealthBar(scene, this.team === "enemy" ? 0xff7655 : 0xd7f06a, 1.8);
+  }
+
+  getPosition() {
+    return this.root.position.clone();
+  }
+
+  getAimPoint() {
+    return new THREE.Vector3(this.root.position.x, 2.8, this.root.position.z);
+  }
+
+  getLaunchPosition() {
+    return this.launcher.localToWorld(new THREE.Vector3(0, 1.8, 0));
+  }
+
+  updateHealthBar(camera) {
+    updateHealthBar(
+      this.healthBar,
+      new THREE.Vector3(this.root.position.x, 4.2, this.root.position.z),
+      this.hp,
+      this.maxHp,
+      camera,
+    );
+  }
+
+  takeDamage(damage, battlefield) {
+    if (this.hp <= 0) return;
+    this.hp = Math.max(0, this.hp - damage);
+    if (this.hp === 0) {
+      this.root.visible = false;
+      this.healthBar.group.visible = false;
+    } else {
+      this.updateHealthBar(battlefield.camera);
+    }
+  }
+
+  resetHealth(camera) {
+    this.hp = this.maxHp;
+    this.cooldownRemaining = 0;
+    this.root.visible = true;
+    this.healthBar.group.visible = true;
+    this.updateHealthBar(camera);
+  }
+
+  aimAt(position) {
+    const towerPosition = this.getPosition();
+    this.launcher.rotation.y = Math.atan2(
+      position.x - towerPosition.x,
+      position.z - towerPosition.z,
+    );
+  }
+}
+
 class Tank extends Unit {
   buildModel() {
     const hullMaterial = standardMaterial(this.config.color);
@@ -497,6 +770,169 @@ class Artillery extends Tank {
   }
 }
 
+class InfantryFightingVehicle extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const glass = standardMaterial(0x9aada2, { metalness: 0.3, roughness: 0.36 });
+    addBox(this.root, body, [2.5, 0.92, 3.8], [0, 0.8, 0]);
+    addBox(this.root, body, [2.05, 0.64, 1.05], [0, 1.48, 1.0]);
+    addBox(this.root, glass, [1.32, 0.34, 0.12], [0, 1.53, 1.55]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 0, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.43, 0.43, 0.2, [side * 1.31, 0.47, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+
+    const turret = new THREE.Group();
+    turret.position.set(0, 1.45, -0.15);
+    this.root.add(turret);
+    addBox(turret, body, [1.35, 0.58, 1.35], [0, 0, 0]);
+    const cannon = addCylinder(turret, dark, 0.08, 0.12, 1.65, [0, 0.1, 1.18]);
+    cannon.rotation.x = Math.PI / 2;
+    const coax = addCylinder(turret, dark, 0.035, 0.045, 0.85, [0.42, -0.1, 0.88], 8);
+    coax.rotation.x = Math.PI / 2;
+  }
+}
+
+class ArmoredPersonnelCarrier extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const glass = standardMaterial(0x9aada2, { metalness: 0.3, roughness: 0.36 });
+    addBox(this.root, body, [2.55, 1.05, 4.35], [0, 0.82, 0]);
+    addBox(this.root, body, [2.2, 0.7, 1.15], [0, 1.57, 1.15]);
+    addBox(this.root, glass, [1.72, 0.32, 0.1], [0, 1.68, 1.73]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.35, -0.45, 0.55, 1.35]) {
+        const wheel = addCylinder(this.root, dark, 0.42, 0.42, 0.2, [side * 1.33, 0.43, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+
+    const gun = addCylinder(this.root, dark, 0.055, 0.075, 1.05, [0, 1.82, 1.0], 8);
+    gun.rotation.x = Math.PI / 2;
+    for (const x of [-0.62, 0, 0.62]) {
+      addBox(this.root, dark, [0.2, 0.36, 0.2], [x, 1.5, -0.35]);
+      const head = new THREE.Mesh(new THREE.SphereGeometry(0.13, 8, 6), glass);
+      head.position.set(x, 1.77, -0.35);
+      this.root.add(head);
+    }
+  }
+}
+
+class RocketArtillery extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f, { metalness: 0.2 });
+    const missileBody = standardMaterial(0x9ca28d, { metalness: 0.42, roughness: 0.38 });
+    const missileNose = standardMaterial(0x4c554a, { metalness: 0.25, roughness: 0.44 });
+    const missileBand = standardMaterial(0xb9523e, { metalness: 0.18, roughness: 0.5 });
+    addBox(this.root, body, [2.8, 0.78, 4.3], [0, 0.68, 0]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.3, 0, 1.3]) {
+        const wheel = addCylinder(this.root, dark, 0.43, 0.43, 0.2, [side * 1.48, 0.43, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+
+    const launcher = new THREE.Group();
+    launcher.position.set(0, 1.08, -0.55);
+    launcher.rotation.x = -0.28;
+    this.root.add(launcher);
+    addBox(launcher, body, [2.35, 0.42, 2.2], [0, 0, 0]);
+    for (const x of [-0.72, -0.24, 0.24, 0.72]) {
+      const missile = new THREE.Group();
+      missile.position.set(x, 0.42, 0.1);
+      missile.rotation.x = Math.PI / 2 - 0.48;
+      launcher.add(missile);
+      addCylinder(missile, missileBody, 0.105, 0.12, 1.72, [0, 0, 0], 12);
+      const nose = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.42, 12), missileNose);
+      nose.position.y = 1.04;
+      missile.add(nose);
+      addCylinder(missile, missileBand, 0.123, 0.123, 0.12, [0, -0.42, 0], 12);
+      addCylinder(missile, dark, 0.12, 0.14, 0.14, [0, -0.9, 0], 12);
+      addBox(missile, missileNose, [0.34, 0.08, 0.08], [0.16, -0.67, 0]);
+      addBox(missile, missileNose, [0.34, 0.08, 0.08], [-0.16, -0.67, 0]);
+      addBox(missile, missileNose, [0.08, 0.08, 0.34], [0, -0.67, 0.16]);
+      addBox(missile, missileNose, [0.08, 0.08, 0.34], [0, -0.67, -0.16]);
+    }
+  }
+}
+
+class EngineerVehicle extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const metal = standardMaterial(0xa6a187, { metalness: 0.36 });
+    addBox(this.root, body, [2.5, 0.88, 4.1], [0, 0.75, 0]);
+    addBox(this.root, body, [2.15, 0.62, 1.15], [0, 1.43, 1.05]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 0, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.43, 0.43, 0.2, [side * 1.31, 0.43, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+
+    const crane = new THREE.Group();
+    crane.position.set(0.7, 1.28, -0.5);
+    crane.rotation.x = -0.55;
+    this.root.add(crane);
+    addBox(crane, metal, [0.3, 0.34, 2.6], [0, 0, 0]);
+    addBox(crane, metal, [0.18, 0.7, 0.18], [0, -0.36, 1.24]);
+    addCylinder(crane, dark, 0.09, 0.09, 0.52, [0, -0.76, 1.35], 8);
+  }
+}
+
+class ReconDrone extends Unit {
+  buildModel() {
+    this.root.position.y = this.carrierLaunch ? 1.2 : 4.8;
+    const body = standardMaterial(this.config.color, { metalness: 0.25 });
+    const dark = standardMaterial(0x303832, { metalness: 0.3 });
+    const sensor = standardMaterial(0x9bb7ad, { metalness: 0.2, roughness: 0.28 });
+    addBox(this.root, body, [0.8, 0.38, 1.15], [0, 0, 0]);
+    const camera = new THREE.Mesh(new THREE.SphereGeometry(0.2, 10, 8), sensor);
+    camera.position.set(0, -0.12, 0.67);
+    this.root.add(camera);
+    const gun = addCylinder(this.root, dark, 0.045, 0.065, 0.82, [0, -0.23, 0.76], 8);
+    gun.rotation.x = Math.PI / 2;
+    this.rotors = [];
+    this.flightTime = 0;
+    this.flightPhase = Math.random() * Math.PI * 2;
+    for (const x of [-1, 1]) {
+      for (const z of [-0.9, 0.9]) {
+        addBox(this.root, dark, [0.12, 0.1, 1.05], [x * 0.55, 0, z * 0.48]);
+        const rotor = new THREE.Group();
+        rotor.position.set(x * 1.08, 0.1, z * 0.95);
+        this.root.add(rotor);
+        addBox(rotor, dark, [1.0, 0.06, 0.12], [0, 0, 0]);
+        addCylinder(rotor, sensor, 0.1, 0.1, 0.12, [0, 0.08, 0], 8);
+        this.rotors.push(rotor);
+      }
+    }
+  }
+
+  animate(delta) {
+    this.flightTime += delta;
+    for (const rotor of this.rotors) rotor.rotation.y += delta * (18 + this.config.speed * 1.1);
+    if (!this.carrierLaunch) {
+      this.root.position.y = 4.8 + Math.sin(this.flightTime * 2.2 + this.flightPhase) * 0.16;
+    }
+  }
+}
+
+class AmphibiousAssaultVehicle extends Tank {
+  buildModel() {
+    super.buildModel();
+    const pontoon = standardMaterial(0x58766d, { metalness: 0.18 });
+    for (const side of [-1, 1]) {
+      addBox(this.root, pontoon, [0.55, 0.62, 3.6], [side * 1.72, 0.46, 0]);
+      addBox(this.root, pontoon, [0.16, 0.16, 3.3], [side * 2.04, 0.68, 0]);
+    }
+  }
+}
+
 class SamLauncher extends Unit {
   buildModel() {
     const body = standardMaterial(this.config.color);
@@ -565,6 +1001,24 @@ class Helicopter extends Unit {
     const fuselage = addBox(this.root, body, [1.25, 0.95, 2.8], [0, 0, 0]);
     fuselage.rotation.x = -0.08;
     addBox(this.root, glass, [1.05, 0.62, 0.75], [0, 0.08, 0.86]);
+    const gun = addCylinder(this.root, dark, 0.08, 0.11, 1.05, [0, -0.28, 1.32]);
+    gun.rotation.x = Math.PI / 2;
+    const launcherMaterial = standardMaterial(0x454c40, { metalness: 0.3 });
+    const missileMaterial = standardMaterial(0xb1b39c, { metalness: 0.35 });
+    for (const side of [-1, 1]) {
+      addBox(this.root, launcherMaterial, [0.3, 0.24, 1.35], [side * 1.1, -0.38, 0.08]);
+      const missile = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.065, 0.075, 0.82, 8),
+        missileMaterial,
+      );
+      missile.rotation.x = Math.PI / 2;
+      missile.position.set(side * 1.1, -0.19, 0.2);
+      this.root.add(missile);
+      const nose = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.2, 8), missileMaterial);
+      nose.rotation.x = Math.PI / 2;
+      nose.position.set(side * 1.1, -0.19, 0.71);
+      this.root.add(nose);
+    }
     const tail = addBox(this.root, body, [0.34, 0.35, 2.3], [0, 0.18, -2.35]);
     tail.rotation.x = -0.12;
     addBox(this.root, body, [1.5, 0.14, 0.42], [0, -0.16, -1.3]);
@@ -720,9 +1174,15 @@ const UNIT_TYPES = {
   tank: Tank,
   scout: ReconScout,
   artillery: Artillery,
+  ifv: InfantryFightingVehicle,
+  apc: ArmoredPersonnelCarrier,
+  mlrs: RocketArtillery,
+  engineer: EngineerVehicle,
   sam: SamLauncher,
   helicopter: Helicopter,
+  reconDrone: ReconDrone,
   fighterJet: FighterJet,
+  amphibious: AmphibiousAssaultVehicle,
   carrier: AircraftCarrier,
   submarine: Submarine,
 };
@@ -751,6 +1211,7 @@ class Battlefield {
     this.units = [];
     this.projectiles = [];
     this.smokeParticles = [];
+    this.missileDefenseTowers = [];
     this.reinforcementTimer = 0;
     this.reinforcementWave = 0;
     this.selectedUnit = UNIT_CATALOG[0];
@@ -1009,6 +1470,12 @@ class Battlefield {
   createBases() {
     this.enemyBase = new BattleBase(this.scene, ENEMY_BASE, true, LEVELS[0].baseHealth);
     this.playerBase = new BattleBase(this.scene, PLAYER_BASE, false, PLAYER_BASE_HEALTH);
+    this.missileDefenseTowers = [
+      new MissileDefenseTower(this.scene, this.playerBase, -5.5),
+      new MissileDefenseTower(this.scene, this.playerBase, 5.5),
+      new MissileDefenseTower(this.scene, this.enemyBase, -5.5),
+      new MissileDefenseTower(this.scene, this.enemyBase, 5.5),
+    ];
   }
 
   createUnitMenu() {
@@ -1019,7 +1486,9 @@ class Battlefield {
       button.className = "unit-card";
       button.dataset.unit = config.id;
       button.setAttribute("aria-pressed", String(config.id === this.selectedUnit.id));
-      button.innerHTML = `<span class="unit-card-name">${config.name}</span><span class="unit-card-detail">HP ${config.hp} · DMG ${config.damage}</span>`;
+      const volleyCount = config.volleyCount ?? 1;
+      const damageDetail = volleyCount > 1 ? `${config.damage} × ${volleyCount}` : config.damage;
+      button.innerHTML = `<span class="unit-card-name">${config.name}</span><span class="unit-card-detail">HP ${config.hp} · DMG ${damageDetail}</span>`;
       button.addEventListener("click", () => this.selectUnit(config));
       list.appendChild(button);
     }
@@ -1057,7 +1526,13 @@ class Battlefield {
 
   getUpgradedConfig(config) {
     const level = this.weaponUpgradeLevels[config.id];
-    return { ...config, cooldown: config.cooldown * Math.pow(0.86, level) };
+    return {
+      ...config,
+      cooldown: config.cooldown * Math.pow(0.86, level),
+      ...(config.secondaryCooldown
+        ? { secondaryCooldown: config.secondaryCooldown * Math.pow(0.86, level) }
+        : {}),
+    };
   }
 
   refreshWeaponWorkshop() {
@@ -1207,6 +1682,49 @@ class Battlefield {
     this.showToast(`${this.selectedUnit.name.toUpperCase()} DEPLOYED`);
   }
 
+  findOpenSpawnPosition(position, typeId, team, ignoredUnits = null) {
+    const unitRadius = UNIT_SPACING_RADII[typeId] ?? 2;
+    const xMin = -FIELD_WIDTH / 2 + unitRadius;
+    const xMax = FIELD_WIDTH / 2 - unitRadius;
+    const zMin = team === "player" ? DEPLOYMENT_LINE_Z + unitRadius : -FIELD_DEPTH / 2 + unitRadius;
+    const zMax = team === "player" ? FIELD_DEPTH / 2 - unitRadius : DEPLOYMENT_LINE_Z - unitRadius;
+    const candidates = [];
+    candidates.push(position.clone());
+    const step = Math.max(1.2, unitRadius * 0.6);
+    for (let ring = 1; ring <= 16; ring++) {
+      const radius = ring * step;
+      for (let spoke = 0; spoke < 16; spoke++) {
+        const angle = (spoke / 16) * Math.PI * 2;
+        candidates.push(new THREE.Vector3(
+          position.x + Math.cos(angle) * radius,
+          position.y,
+          position.z + Math.sin(angle) * radius,
+        ));
+      }
+    }
+
+    let bestPosition = candidates[0];
+    let bestClearance = -Infinity;
+    for (const candidate of candidates) {
+      candidate.x = THREE.MathUtils.clamp(candidate.x, xMin, xMax);
+      candidate.z = THREE.MathUtils.clamp(candidate.z, zMin, zMax);
+      let clearance = Infinity;
+      for (const other of this.units) {
+        if (other.hp <= 0 || ignoredUnits?.has(other)) continue;
+        const requiredDistance = unitRadius + (UNIT_SPACING_RADII[other.config.id] ?? 2) + 1.4;
+        const distance = Math.hypot(candidate.x - other.root.position.x, candidate.z - other.root.position.z);
+        clearance = Math.min(clearance, distance - requiredDistance);
+        if (clearance < 0 && clearance <= bestClearance) break;
+      }
+      if (clearance > bestClearance) {
+        bestPosition = candidate;
+        bestClearance = clearance;
+      }
+      if (clearance >= 0) return candidate;
+    }
+    return bestPosition;
+  }
+
   spawnUnit(typeId, team, position, carrier = null, launchOffset = null) {
     const baseConfig = UNIT_CATALOG.find((unit) => unit.id === typeId);
     const UnitType = UNIT_TYPES[typeId];
@@ -1218,9 +1736,15 @@ class Battlefield {
         tank: 0x954d3d,
         scout: 0xb2664d,
         artillery: 0x805047,
+        ifv: 0x8c5142,
+        apc: 0x865044,
+        mlrs: 0x76504a,
+        engineer: 0x826047,
         sam: 0x80634c,
         helicopter: 0xa1513f,
+        reconDrone: 0xa55d4c,
         fighterJet: 0xc36a55,
+        amphibious: 0x5c8180,
         carrier: 0x986557,
         submarine: 0x85584f,
       };
@@ -1230,12 +1754,19 @@ class Battlefield {
         hp: Math.round(baseConfig.hp * strength),
         damage: Math.round(baseConfig.damage * strength),
         cooldown: baseConfig.cooldown * Math.pow(0.96, this.levelIndex),
+        ...(baseConfig.secondaryCooldown
+          ? { secondaryCooldown: baseConfig.secondaryCooldown * Math.pow(0.96, this.levelIndex) }
+          : {}),
+        ...(baseConfig.secondaryDamage
+          ? { secondaryDamage: Math.round(baseConfig.secondaryDamage * strength) }
+          : {}),
         speed: baseConfig.speed * (1 + this.levelIndex * 0.06),
         color: enemyColors[typeId],
       };
     }
 
-    const unit = new UnitType(this.scene, config, position, team, carrier, launchOffset);
+    const spawnPosition = carrier ? position : this.findOpenSpawnPosition(position, typeId, team);
+    const unit = new UnitType(this.scene, config, spawnPosition, team, carrier, launchOffset);
     this.units.push(unit);
     return unit;
   }
@@ -1265,15 +1796,29 @@ class Battlefield {
         }
         return true;
       });
+      const repositioningUnits = new Set(this.units);
       this.units.forEach((unit, i) => {
         const height = unit.config.air ? 3.1 : unit.config.id === "submarine" ? -0.35 : 0;
-        unit.root.position.set(((i % 5) - 2) * 3.2, height, 20 + Math.floor(i / 5) * 4);
+        const desiredPosition = new THREE.Vector3(
+          ((i % 5) - 2) * 7,
+          height,
+          18 + Math.floor(i / 5) * 7,
+        );
+        const spawnPosition = this.findOpenSpawnPosition(
+          desiredPosition,
+          unit.config.id,
+          "player",
+          repositioningUnits,
+        );
+        repositioningUnits.delete(unit);
+        unit.root.position.copy(spawnPosition);
         unit.root.rotation.y = Math.PI;
       });
     }
 
     this.enemyBase.resetHealth(this.level.baseHealth);
     this.playerBase.resetHealth(PLAYER_BASE_HEALTH + index * PLAYER_BASE_HEALTH_INCREASE);
+    for (const tower of this.missileDefenseTowers) tower.resetHealth(this.camera);
     this.scene.background.setHex(this.level.sky);
     this.scene.fog.color.setHex(this.level.sky);
     this.ground.material.map = this.level.ocean ? this.waterTexture : this.landTexture;
@@ -1324,25 +1869,96 @@ class Battlefield {
 
   onUnitDestroyed(unit) {
     unit.destroy();
+    const unitIndex = this.units.indexOf(unit);
+    if (unitIndex !== -1) this.units.splice(unitIndex, 1);
     this.refreshHud();
   }
 
   updateEnemyReinforcements(delta) {
     this.reinforcementTimer += delta;
-    const interval = Math.max(4, 8 - this.levelIndex * 0.2);
+    const interval = Math.max(3.2, 6.5 - this.levelIndex * 0.17);
     if (this.reinforcementTimer < interval) return;
 
     this.reinforcementTimer -= interval;
     this.reinforcementWave++;
-    const landTypes = ["tank", "artillery", "scout", "helicopter", "fighterJet", "sam"];
-    const oceanTypes = ["carrier", "submarine", "fighterJet", "helicopter"];
+    const landTypes = ["tank", "artillery", "scout", "ifv", "apc", "mlrs", "engineer", "helicopter", "reconDrone", "fighterJet", "amphibious", "sam"];
+    const oceanTypes = ["carrier", "submarine", "fighterJet", "helicopter", "reconDrone", "amphibious"];
     const types = this.level.ocean ? oceanTypes : landTypes;
-    const type = types[(this.reinforcementWave - 1) % types.length];
-    const x = ((this.reinforcementWave * 2) % 5 - 2) * 10;
-    const z = -31 - (this.reinforcementWave % 3) * 4;
-    this.spawnUnit(type, "enemy", new THREE.Vector3(x, 0, z));
+    const groupSize = Math.min(3, 1 + Math.floor((this.reinforcementWave - 1) / 5));
+    for (let i = 0; i < groupSize; i++) {
+      const type = types[(this.reinforcementWave + i - 1) % types.length];
+      const formationSlot = this.reinforcementWave * 2 + i * 3;
+      const x = (formationSlot % 5 - 2) * 10;
+      const z = -31 - ((this.reinforcementWave + i) % 3) * 4;
+      this.spawnUnit(type, "enemy", new THREE.Vector3(x, 0, z));
+    }
     this.refreshHud();
     this.showToast("ENEMY REINFORCEMENTS DEPLOYED");
+  }
+
+  updateMissileDefense(delta) {
+    for (const tower of this.missileDefenseTowers) {
+      if (tower.hp <= 0) continue;
+      tower.cooldownRemaining = Math.max(0, tower.cooldownRemaining - delta);
+      if (tower.cooldownRemaining > 0) continue;
+
+      const towerPosition = tower.getPosition();
+      let target = null;
+      let closestDistance = tower.range;
+      for (const projectile of this.projectiles) {
+        if (projectile.weapon !== "missile"
+          || projectile.owner.team === tower.team
+          || projectile.intercepted) continue;
+        const targetTeam = projectile.target.team ?? (projectile.target.isEnemy ? "enemy" : "player");
+        if (targetTeam !== tower.team) continue;
+        const distance = towerPosition.distanceTo(projectile.mesh.position);
+        if (distance < closestDistance) {
+          target = projectile;
+          closestDistance = distance;
+        }
+      }
+      if (!target) continue;
+
+      target.intercepted = true;
+      tower.aimAt(target.mesh.position);
+      const mesh = this.createMissileMesh(tower.team);
+      mesh.position.copy(tower.getLaunchPosition());
+      this.scene.add(mesh);
+      this.projectiles.push({
+        mesh,
+        owner: tower,
+        weapon: "interceptor",
+        targetProjectile: target,
+        projectileSpeed: 52,
+        life: 4,
+        trailTimer: 0,
+      });
+      tower.cooldownRemaining = 1.65;
+    }
+  }
+
+  spawnInterceptionFlash(position) {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffc45c,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(EXHAUST_SMOKE_GEOMETRY, material);
+    mesh.position.copy(position);
+    const size = 0.4;
+    mesh.scale.setScalar(size);
+    this.scene.add(mesh);
+    this.smokeParticles.push({
+      mesh,
+      material,
+      life: 0.24,
+      maxLife: 0.24,
+      size,
+      growth: 0.5,
+      opacity: 0.95,
+      velocity: new THREE.Vector3(0, 0.25, 0),
+    });
   }
 
   spawnProjectile(
@@ -1351,12 +1967,15 @@ class Battlefield {
     weapon = owner.config.weapon,
     damage = owner.config.damage,
     projectileSpeed = owner.config.projectileSpeed,
+    localMuzzleOffset = null,
   ) {
-    const start = owner.root.position.clone();
-    if (weapon === "torpedo" && owner.config.id === "submarine") {
+    const start = localMuzzleOffset
+      ? owner.root.localToWorld(localMuzzleOffset.clone())
+      : owner.root.position.clone();
+    if (!localMuzzleOffset && weapon === "torpedo" && owner.config.id === "submarine") {
       start.y += 0.18;
       start.z += 4.6;
-    } else {
+    } else if (!localMuzzleOffset) {
       start.y += owner.config.air ? 0.15 : 1.4;
     }
     const color = owner.team === "player" ? 0xd7f06a : 0xff7655;
@@ -1451,22 +2070,75 @@ class Battlefield {
     });
   }
 
+  updateUnitExhaust(unit, delta) {
+    unit.exhaustTimer -= delta;
+    if (unit.exhaustTimer > 0) return;
+
+    const snowDrifting = this.level.weather === "snow"
+      && unit.config.domain !== "water"
+      && unit.movementSpeed > 1
+      && unit.driftIntensity > 0.18;
+    const moving = unit.movementSpeed > 0.5;
+    unit.exhaustTimer = snowDrifting ? 0.16 : moving ? 0.22 : 0.72;
+
+    const outlet = unit.exhaustPorts[0];
+    const position = unit.root.localToWorld(outlet.clone());
+    const velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(unit.root.quaternion);
+    velocity.multiplyScalar(snowDrifting ? 2.3 : moving ? 1.1 : 0.35);
+    velocity.y += snowDrifting ? 0.65 : 0.38;
+    this.spawnExhaustSmoke(position, snowDrifting, moving, velocity);
+  }
+
+  spawnExhaustSmoke(position, heavyPlume, moving, velocity) {
+    const size = heavyPlume ? 0.42 : moving ? 0.3 : 0.22;
+    const growth = heavyPlume ? 0.65 : 0.42;
+    const opacity = heavyPlume ? 0.68 : 0.5;
+    const life = heavyPlume ? 1.4 : moving ? 1.1 : 0.9;
+    const material = new THREE.MeshBasicMaterial({
+      color: heavyPlume ? 0x9ca39e : 0x737a76,
+      transparent: true,
+      opacity,
+      depthWrite: false,
+    });
+    const mesh = new THREE.Mesh(EXHAUST_SMOKE_GEOMETRY, material);
+    mesh.position.copy(position);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), velocity.clone().normalize());
+    mesh.scale.set(size * 0.78, size * 0.78, size * 1.7);
+    this.scene.add(mesh);
+    this.smokeParticles.push({
+      mesh,
+      material,
+      life,
+      maxLife: life,
+      size,
+      growth,
+      stretch: 1.7,
+      opacity,
+      velocity: velocity.clone().add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.16,
+        Math.random() * 0.12,
+        (Math.random() - 0.5) * 0.16,
+      )),
+    });
+  }
+
   updateSmokeParticles(delta) {
     for (let i = this.smokeParticles.length - 1; i >= 0; i--) {
       const particle = this.smokeParticles[i];
       particle.life -= delta;
       if (particle.life <= 0) {
         this.scene.remove(particle.mesh);
-        particle.mesh.geometry.dispose();
+        if (!SHARED_GEOMETRIES.has(particle.mesh.geometry)) particle.mesh.geometry.dispose();
         particle.material.dispose();
         this.smokeParticles.splice(i, 1);
         continue;
       }
 
       const progress = 1 - particle.life / particle.maxLife;
-      particle.material.opacity = 0.44 * (1 - progress);
-      const size = particle.size + progress * 0.38;
-      particle.mesh.scale.setScalar(size);
+      particle.material.opacity = (particle.opacity ?? 0.44) * (1 - progress);
+      const size = particle.size + progress * (particle.growth ?? 0.38);
+      if (particle.stretch) particle.mesh.scale.set(size * 0.78, size * 0.78, size * particle.stretch);
+      else particle.mesh.scale.setScalar(size);
       particle.mesh.position.addScaledVector(particle.velocity, delta);
     }
   }
@@ -1474,6 +2146,42 @@ class Battlefield {
   updateProjectiles(delta) {
     for (let i = this.projectiles.length - 1; i >= 0 && this.mode === "battle"; i--) {
       const projectile = this.projectiles[i];
+      if (projectile.weapon === "interceptor") {
+        const targetProjectile = projectile.targetProjectile;
+        const targetIndex = this.projectiles.indexOf(targetProjectile);
+        if (targetIndex === -1) {
+          this.removeProjectile(i);
+          continue;
+        }
+        projectile.life -= delta;
+        if (projectile.life <= 0) {
+          targetProjectile.intercepted = false;
+          this.removeProjectile(i);
+          continue;
+        }
+
+        const offset = targetProjectile.mesh.position.clone().sub(projectile.mesh.position);
+        const distance = offset.length();
+        const step = projectile.projectileSpeed * delta;
+        if (distance <= step + 0.9) {
+          const interceptPosition = targetProjectile.mesh.position.clone();
+          this.removeProjectile(targetIndex);
+          this.spawnInterceptionFlash(interceptPosition);
+          const interceptorIndex = this.projectiles.indexOf(projectile);
+          if (interceptorIndex !== -1) this.removeProjectile(interceptorIndex);
+          continue;
+        }
+        const direction = offset.normalize();
+        projectile.mesh.position.addScaledVector(direction, step);
+        projectile.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
+        projectile.trailTimer -= delta;
+        if (projectile.trailTimer <= 0) {
+          this.spawnMissileSmoke(projectile.mesh.localToWorld(new THREE.Vector3(0, 0, -0.58)));
+          projectile.trailTimer = 0.045;
+        }
+        continue;
+      }
+
       projectile.life -= delta;
       if (projectile.life <= 0 || projectile.target.hp <= 0) {
         this.removeProjectile(i);
@@ -1572,7 +2280,9 @@ class Battlefield {
     if (this.mode === "battle") {
       this.updateEnemyReinforcements(delta);
       for (const unit of this.units) unit.update(delta, this);
+      this.updateMissileDefense(delta);
       this.updateProjectiles(delta);
+      for (const tower of this.missileDefenseTowers) tower.updateHealthBar(this.camera);
       this.enemyBase.updateHealthBar(this.camera);
       this.playerBase.updateHealthBar(this.camera);
     }

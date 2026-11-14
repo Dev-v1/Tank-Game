@@ -86,18 +86,26 @@
       .deployment-status { color: var(--muted); font: 9px/1.7 "DM Mono", monospace; letter-spacing: .05em; }
       .deployment-status strong { color: var(--ink); font-weight: 500; }
       .unit-deck {
-        left: 50%; bottom: 20px; transform: translateX(-50%);
-        width: min(760px, calc(100vw - 32px)); padding: 12px;
+        right: 16px; bottom: 14px; width: min(210px, calc(100vw - 32px));
+        max-height: min(56vh, 480px); padding: 9px 8px;
         border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(12px);
       }
-      .deck-heading { display: flex; justify-content: space-between; align-items: center; margin: 0 2px 9px; }
+      .deck-heading { display: flex; flex-direction: column; align-items: flex-start; gap: 5px; margin: 0 2px 6px; }
       .deck-title { color: var(--muted); font: 9px "DM Mono", monospace; letter-spacing: .15em; }
-      .deck-hint { color: rgba(237, 242, 232, .58); font: 9px "DM Mono", monospace; }
-      .unit-list { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+      .deck-meta { display: flex; justify-content: space-between; width: 100%; gap: 6px; color: rgba(237, 242, 232, .62); font: 7px "DM Mono", monospace; letter-spacing: .04em; white-space: nowrap; }
+      .deck-meta #selectionHint { color: var(--lime); }
+      .unit-list {
+        display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px;
+        max-height: min(48vh, 400px); overflow-x: hidden; overflow-y: auto; padding: 2px 3px 7px;
+        overscroll-behavior-y: contain; scroll-snap-type: y mandatory;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-color: rgba(215, 240, 106, .45) rgba(255, 255, 255, .06); scrollbar-width: thin;
+      }
       .unit-card {
-        min-width: 0; min-height: 74px; padding: 10px;
+        min-width: 0; min-height: 54px; padding: 7px 8px;
         border: 1px solid var(--line); background: rgba(255, 255, 255, .025);
-        text-align: left; cursor: pointer; transition: border-color .15s, background .15s;
+        text-align: left; cursor: pointer; scroll-snap-align: start;
+        transition: border-color .15s, background .15s;
       }
       .unit-card:hover, .unit-card[aria-pressed="true"] { border-color: var(--lime); background: rgba(215, 240, 106, .07); }
       .unit-card:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
@@ -139,10 +147,12 @@
         .upgrade-button { min-height: 28px; padding: 0 5px; font-size: 8px; }
         .panel-title { font-size: 24px; }
         .separator { margin: 10px 0; }
-        .unit-deck { bottom: 10px; width: calc(100vw - 20px); padding: 9px; }
-        .unit-list { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
-        .unit-card { min-height: 60px; padding: 8px; }
-        .deck-hint { max-width: 55%; text-align: right; }
+        .unit-deck { right: 10px; bottom: 8px; width: min(158px, calc(100vw - 20px)); max-height: 40vh; padding: 7px 6px 5px; }
+        .deck-heading { gap: 4px; margin-bottom: 4px; }
+        .deck-title { font-size: 8px; }
+        .deck-meta { gap: 4px; font-size: 6px; }
+        .unit-list { max-height: min(calc(40vh - 50px), 220px); gap: 5px; padding: 2px 2px 5px; }
+        .unit-card { min-height: 48px; padding: 6px; }
       }
       @media (max-width: 390px) {
         .side-panel { width: 46vw; }
@@ -203,13 +213,13 @@
       <button class="upgrade-button" id="rateUpgrade" type="button">UPGRADE WEAPON RATE</button>
     </aside>
 
-    <section class="unit-deck" aria-label="Unit selection">
+    <nav class="unit-deck" aria-label="Vehicle deployment roster">
       <div class="deck-heading">
-        <div class="deck-title">SELECT UNIT / CLICK TO DEPLOY</div>
-        <div class="deck-hint" id="selectionHint">TANK SELECTED</div>
+        <div class="deck-title">SELECT VEHICLE</div>
+        <div class="deck-meta"><span id="selectionHint">TANK SELECTED</span><span>SCROLL ↓</span></div>
       </div>
-      <div class="unit-list" id="unitList"></div>
-    </section>
+      <div class="unit-list" id="unitList" tabindex="0" aria-label="Scrollable list of military vehicles"></div>
+    </nav>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <section class="mission-message" id="missionMessage" role="dialog" aria-modal="true" aria-labelledby="messageTitle" hidden>
       <div class="eyebrow" id="messageEyebrow">SECTOR SECURED</div>
