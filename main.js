@@ -1185,6 +1185,7 @@ class AircraftCarrier extends Unit {
 class Submarine extends Unit {
   buildModel() {
     this.root.position.y = -0.35;
+    this.nextTorpedoTube = -0.42;
     const hull = standardMaterial(this.config.color, { metalness: 0.34, roughness: 0.42 });
     const dark = standardMaterial(0x263531, { metalness: 0.25 });
     const body = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), hull);
@@ -2091,8 +2092,8 @@ class Battlefield {
       ? owner.root.localToWorld(localMuzzleOffset.clone())
       : owner.root.position.clone();
     if (!localMuzzleOffset && weapon === "torpedo" && owner.config.id === "submarine") {
-      start.y += 0.18;
-      start.z += 4.6;
+      start.copy(owner.root.localToWorld(new THREE.Vector3(owner.nextTorpedoTube, 0.18, 4.6)));
+      owner.nextTorpedoTube *= -1;
     } else if (!localMuzzleOffset) {
       start.y += owner.config.air ? 0.15 : 1.4;
     }
@@ -2108,11 +2109,20 @@ class Battlefield {
           : new THREE.SphereGeometry(0.19, 10, 8);
       mesh = new THREE.Mesh(
         geometry,
-        new THREE.MeshBasicMaterial({ color }),
+        new THREE.MeshBasicMaterial({
+          color,
+          transparent: weapon === "torpedo",
+          opacity: weapon === "torpedo" ? 0.8 : 1,
+          depthTest: weapon !== "torpedo",
+          depthWrite: weapon !== "torpedo",
+        }),
       );
+      if (weapon === "torpedo") mesh.renderOrder = 1;
     }
     mesh.position.copy(start);
-    const direction = target.getAimPoint().sub(start).normalize();
+    const aimPoint = target.getAimPoint();
+    if (weapon === "torpedo") aimPoint.y = start.y;
+    const direction = aimPoint.sub(start).normalize();
     if (weapon === "missile") {
       mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), direction);
     } else if (weapon === "bomb" || weapon === "torpedo") {
@@ -2192,19 +2202,51 @@ class Battlefield {
     unit.exhaustTimer -= delta;
     if (unit.exhaustTimer > 0) return;
 
+    const weatherActive = (this.level.weather ?? "clear") !== "clear";
     const snowDrifting = this.level.weather === "snow"
       && unit.config.domain !== "water"
       && unit.movementSpeed > 1
       && unit.driftIntensity > 0.18;
     const moving = unit.movementSpeed > 0.5;
-    unit.exhaustTimer = snowDrifting ? 0.16 : moving ? 0.22 : 0.72;
+    const heavyPlume = weatherActive || snowDrifting;
+    unit.exhaustTimer = snowDrifting ? 0.16 : weatherActive ? (moving ? 0.17 : 0.4) : moving ? 0.22 : 0.72;
 
     const outlet = unit.exhaustPorts[0];
     const position = unit.root.localToWorld(outlet.clone());
     const velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(unit.root.quaternion);
-    velocity.multiplyScalar(snowDrifting ? 2.3 : moving ? 1.1 : 0.35);
-    velocity.y += snowDrifting ? 0.65 : 0.38;
-    this.spawnExhaustSmoke(position, snowDrifting, moving, velocity);
+    velocity.multiplyScalar(snowDrifting ? 2.3 : weatherActive ? 1.7 : moving ? 1.1 : 0.35);
+    velocity.y += snowDrifting ? 0.65 : weatherActive ? 0.55 : 0.38;
+    this.spawnExhaustSmoke(position, heavyPlume, moving, velocity);
+  }
+
+  spawnTorpedoBubble(position) {
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xc3dddc,
+      transparent: true,
+      opacity: 0.48,
+      depthWrite: false,
+      depthTest: false,
+    });
+    const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 7, 6), material);
+    mesh.position.copy(position);
+    const size = 0.055 + Math.random() * 0.035;
+    mesh.scale.setScalar(size);
+    mesh.renderOrder = 1;
+    this.scene.add(mesh);
+    this.smokeParticles.push({
+      mesh,
+      material,
+      life: 0.48,
+      maxLife: 0.48,
+      size,
+      growth: 0.11,
+      opacity: 0.48,
+      velocity: new THREE.Vector3(
+        (Math.random() - 0.5) * 0.08,
+        0.16 + Math.random() * 0.1,
+        (Math.random() - 0.5) * 0.08,
+      ),
+    });
   }
 
   spawnExhaustSmoke(position, heavyPlume, moving, velocity) {
@@ -2307,6 +2349,7 @@ class Battlefield {
       }
 
       const destination = projectile.target.getAimPoint();
+      if (projectile.weapon === "torpedo") destination.y = projectile.mesh.position.y;
       const offset = destination.sub(projectile.mesh.position);
       const distance = offset.length();
       const step = projectile.projectileSpeed * delta;
@@ -2325,7 +2368,14 @@ class Battlefield {
           this.spawnMissileSmoke(projectile.mesh.localToWorld(new THREE.Vector3(0, 0, -0.58)));
           projectile.trailTimer = 0.045;
         }
-      } else if (projectile.weapon === "bomb" || projectile.weapon === "torpedo") {
+      } else if (projectile.weapon === "torpedo") {
+        projectile.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
+        projectile.trailTimer -= delta;
+        if (projectile.trailTimer <= 0) {
+          this.spawnTorpedoBubble(projectile.mesh.position);
+          projectile.trailTimer = 0.1;
+        }
+      } else if (projectile.weapon === "bomb") {
         projectile.mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction);
       }
     }
