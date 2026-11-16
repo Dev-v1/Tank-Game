@@ -9,7 +9,7 @@ const PLAYER_BASE_HEALTH = 900;
 const PLAYER_BASE_HEALTH_INCREASE = 55;
 const ENEMY_BASE_HEALTH_START = 1000;
 const ENEMY_BASE_HEALTH_INCREASE = 110;
-const MAX_PLAYER_UNITS = 18;
+const MAX_UNITS_PER_TEAM = 10;
 const MAX_WEAPON_UPGRADE_LEVEL = 5;
 const WEAPON_UPGRADE_BASE_COST = 180;
 const UNIT_CATALOG = [
@@ -519,6 +519,16 @@ class Unit {
       1,
     );
     this.animate(delta);
+    const weather = WEATHER_PRESETS[battlefield.level.weather];
+    const windStrength = Math.hypot(weather?.windX ?? 0, weather?.windZ ?? 0);
+    const aircraftInWind = ["helicopter", "reconDrone", "fighterJet"].includes(this.config.id)
+      && windStrength >= 8;
+    const swayScale = this.config.id === "fighterJet" ? 0.45 : 1;
+    this.root.rotation.z = aircraftInWind
+      ? Math.sin(performance.now() * 0.008 + this.separationId)
+        * Math.min(0.16, windStrength * 0.012)
+        * swayScale
+      : 0;
     battlefield.updateUnitExhaust(this, delta);
     this.updateHealthBar(battlefield.camera);
   }
@@ -656,7 +666,7 @@ class MissileDefenseTower {
     this.nextLaunchSide = -1;
     this.damage = 30;
     this.projectileSpeed = 42;
-    this.attackCooldown = 2.7;
+    this.attackCooldown = 2;
     this.root = new THREE.Group();
     this.root.position.set(base.root.position.x + offsetX, 0, base.root.position.z);
     scene.add(this.root);
@@ -1304,8 +1314,10 @@ class Battlefield {
   createGround() {
     const terrainTexture = this.createTerrainTexture();
     this.landTexture = terrainTexture;
+    this.snowTexture = this.createSnowTexture(terrainTexture);
     this.waterTexture = this.createWaterTexture();
     terrainTexture.anisotropy = Math.min(this.renderer.capabilities.getMaxAnisotropy(), 16);
+    this.snowTexture.anisotropy = terrainTexture.anisotropy;
     const terrainBump = terrainTexture.clone();
     terrainBump.colorSpace = THREE.NoColorSpace;
     terrainBump.needsUpdate = true;
@@ -1417,6 +1429,50 @@ class Battlefield {
     context.moveTo(size * 0.17, size * 0.91);
     context.bezierCurveTo(size * 0.28, size * 0.73, size * 0.66, size * 0.62, size * 0.84, size * 0.12);
     context.stroke();
+
+    const texture = new THREE.CanvasTexture(canvas);
+    texture.colorSpace = THREE.SRGBColorSpace;
+    return texture;
+  }
+
+  createSnowTexture(terrainTexture) {
+    const canvas = document.createElement("canvas");
+    canvas.width = 1024;
+    canvas.height = 1024;
+    const context = canvas.getContext("2d");
+    if (!context) throw new Error("Could not create the battlefield snow texture.");
+    context.drawImage(terrainTexture.image, 0, 0, canvas.width, canvas.height);
+
+    const blanket = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+    blanket.addColorStop(0, "rgba(226, 236, 240, 0.92)");
+    blanket.addColorStop(0.5, "rgba(245, 248, 247, 0.94)");
+    blanket.addColorStop(1, "rgba(220, 232, 238, 0.92)");
+    context.fillStyle = blanket;
+    context.fillRect(0, 0, canvas.width, canvas.height);
+
+    let seed = 0x5a0f2024;
+    const random = () => {
+      seed = (seed * 1664525 + 1013904223) >>> 0;
+      return seed / 0x100000000;
+    };
+    for (let drift = 0; drift < 90; drift++) {
+      const x = random() * canvas.width;
+      const y = random() * canvas.height;
+      const radius = 24 + random() * 110;
+      context.save();
+      context.translate(x, y);
+      context.rotate(random() * Math.PI);
+      context.scale(1, 0.25 + random() * 0.35);
+      const patch = context.createRadialGradient(0, 0, 0, 0, 0, radius);
+      patch.addColorStop(0, "rgba(255, 255, 255, 0.2)");
+      patch.addColorStop(0.7, "rgba(255, 255, 255, 0.08)");
+      patch.addColorStop(1, "rgba(255, 255, 255, 0)");
+      context.fillStyle = patch;
+      context.beginPath();
+      context.arc(0, 0, radius, 0, Math.PI * 2);
+      context.fill();
+      context.restore();
+    }
 
     const texture = new THREE.CanvasTexture(canvas);
     texture.colorSpace = THREE.SRGBColorSpace;
@@ -1700,9 +1756,8 @@ class Battlefield {
       return;
     }
 
-    const activeCount = this.units.filter((unit) => unit.team === "player" && unit.hp > 0).length;
-    if (activeCount >= MAX_PLAYER_UNITS) {
-      this.showToast(`FORCE LIMIT: ${MAX_PLAYER_UNITS} ACTIVE UNITS`);
+    if (this.getActiveUnitCount("player") >= MAX_UNITS_PER_TEAM) {
+      this.showToast(`FORCE LIMIT: ${MAX_UNITS_PER_TEAM} ACTIVE UNITS`);
       return;
     }
 
@@ -1728,7 +1783,11 @@ class Battlefield {
       position = carrier.root.position.clone().add(launchOffset);
       position.y = 1.2;
     }
-    this.spawnUnit(this.selectedUnit.id, "player", position, carrier, launchOffset);
+    const unit = this.spawnUnit(this.selectedUnit.id, "player", position, carrier, launchOffset);
+    if (!unit) {
+      this.showToast(`FORCE LIMIT: ${MAX_UNITS_PER_TEAM} ACTIVE UNITS`);
+      return;
+    }
     this.refreshHud();
     this.refreshWeaponWorkshop();
     this.showToast(`${this.selectedUnit.name.toUpperCase()} DEPLOYED`);
@@ -1777,10 +1836,15 @@ class Battlefield {
     return bestPosition;
   }
 
+  getActiveUnitCount(team) {
+    return this.units.filter((unit) => unit.team === team && unit.hp > 0).length;
+  }
+
   spawnUnit(typeId, team, position, carrier = null, launchOffset = null) {
     const baseConfig = UNIT_CATALOG.find((unit) => unit.id === typeId);
     const UnitType = UNIT_TYPES[typeId];
     if (!baseConfig || !UnitType) throw new Error(`Unknown unit type: ${typeId}`);
+    if (this.getActiveUnitCount(team) >= MAX_UNITS_PER_TEAM) return null;
 
     let config = team === "player" ? this.getUpgradedConfig(baseConfig) : baseConfig;
     if (team === "enemy") {
@@ -1841,11 +1905,14 @@ class Battlefield {
     this.playerBase.resetHealth(PLAYER_BASE_HEALTH + index * PLAYER_BASE_HEALTH_INCREASE);
     for (const tower of this.missileDefenseTowers) tower.resetHealth(this.camera);
     this.scene.background.setHex(this.level.sky);
-    this.scene.fog.color.setHex(this.level.sky);
+    if (this.scene.fog) this.scene.fog.color.setHex(this.level.sky);
     this.setWeather(this.level.weather ?? "clear");
-    this.ground.material.map = this.level.ocean ? this.waterTexture : this.landTexture;
+    const snowCovered = !this.level.ocean && this.level.weather === "snow";
+    this.ground.material.map = this.level.ocean
+      ? this.waterTexture
+      : snowCovered ? this.snowTexture : this.landTexture;
     this.ground.material.bumpMap = this.level.ocean ? null : this.landBumpTexture;
-    this.ground.material.color.setHex(this.level.groundTint);
+    this.ground.material.color.setHex(snowCovered ? 0xffffff : this.level.groundTint);
     this.ground.material.needsUpdate = true;
     this.rocks.visible = !this.level.ocean;
     this.scrub.visible = !this.level.ocean;
@@ -1876,9 +1943,15 @@ class Battlefield {
 
     const preset = WEATHER_PRESETS[weather];
     if (weather !== "clear" && !preset) throw new RangeError(`Unknown weather: ${weather}`);
-    this.scene.fog.near = preset?.fogNear ?? 95;
-    this.scene.fog.far = preset?.fogFar ?? 190;
-    if (!preset) return;
+    if (this.level.ocean) {
+      this.scene.fog = null;
+    } else {
+      if (!this.scene.fog) this.scene.fog = new THREE.Fog(this.level.sky, 95, 190);
+      this.scene.fog.color.setHex(this.level.sky);
+      this.scene.fog.near = preset?.fogNear ?? 95;
+      this.scene.fog.far = preset?.fogFar ?? 190;
+    }
+    if (!preset || (this.level.ocean && weather === "fog")) return;
 
     const positions = new Float32Array(preset.count * 3);
     for (let i = 0; i < preset.count; i++) {
@@ -1955,8 +2028,12 @@ class Battlefield {
   }
 
   updateEnemyReinforcements(delta) {
+    if (this.getActiveUnitCount("enemy") >= MAX_UNITS_PER_TEAM) {
+      this.reinforcementTimer = 0;
+      return;
+    }
     this.reinforcementTimer += delta;
-    const interval = Math.max(3.2, 6.5 - this.levelIndex * 0.17);
+    const interval = Math.max(3.2, 6 - this.levelIndex * 0.17);
     if (this.reinforcementTimer < interval) return;
 
     this.reinforcementTimer -= interval;
@@ -1964,7 +2041,8 @@ class Battlefield {
     const landTypes = ["tank", "artillery", "scout", "ifv", "apc", "mlrs", "engineer", "helicopter", "reconDrone", "fighterJet", "amphibious", "sam"];
     const oceanTypes = ["carrier", "submarine", "fighterJet", "helicopter", "reconDrone", "amphibious"];
     const types = this.level.ocean ? oceanTypes : landTypes;
-    const groupSize = Math.min(3, 1 + Math.floor((this.reinforcementWave - 1) / 5));
+    const availableSlots = MAX_UNITS_PER_TEAM - this.getActiveUnitCount("enemy");
+    const groupSize = Math.min(3, 1 + Math.floor((this.reinforcementWave - 1) / 5), availableSlots);
     for (let i = 0; i < groupSize; i++) {
       const type = types[(this.reinforcementWave + i - 1) % types.length];
       const formationSlot = this.reinforcementWave * 2 + i * 3;
@@ -2014,7 +2092,7 @@ class Battlefield {
           life: 4,
           trailTimer: 0,
         });
-        tower.cooldownRemaining = 1.65;
+        tower.cooldownRemaining = 1.25;
         continue;
       }
 
@@ -2101,23 +2179,13 @@ class Battlefield {
     let mesh;
     if (weapon === "missile") {
       mesh = this.createMissileMesh(owner.team);
+    } else if (weapon === "torpedo") {
+      mesh = this.createTorpedoMesh(owner.team);
     } else {
       const geometry = weapon === "bomb"
         ? new THREE.CylinderGeometry(0.13, 0.18, 0.65, 8)
-        : weapon === "torpedo"
-          ? new THREE.CylinderGeometry(0.09, 0.11, 0.82, 8)
-          : new THREE.SphereGeometry(0.19, 10, 8);
-      mesh = new THREE.Mesh(
-        geometry,
-        new THREE.MeshBasicMaterial({
-          color,
-          transparent: weapon === "torpedo",
-          opacity: weapon === "torpedo" ? 0.8 : 1,
-          depthTest: weapon !== "torpedo",
-          depthWrite: weapon !== "torpedo",
-        }),
-      );
-      if (weapon === "torpedo") mesh.renderOrder = 1;
+        : new THREE.SphereGeometry(0.19, 10, 8);
+      mesh = new THREE.Mesh(geometry, new THREE.MeshBasicMaterial({ color }));
     }
     mesh.position.copy(start);
     const aimPoint = target.getAimPoint();
@@ -2130,6 +2198,33 @@ class Battlefield {
     }
     this.scene.add(mesh);
     this.projectiles.push({ mesh, owner, target, weapon, damage, projectileSpeed, life: 5, trailTimer: 0 });
+  }
+
+  createTorpedoMesh(team) {
+    const color = team === "player" ? 0x31eaff : 0xff6248;
+    const bodyMaterial = new THREE.MeshBasicMaterial({ color, depthTest: false, depthWrite: false });
+    const detailMaterial = new THREE.MeshBasicMaterial({
+      color: 0xe9ffff,
+      depthTest: false,
+      depthWrite: false,
+    });
+    const torpedo = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.18, 1.15, 12), bodyMaterial);
+    torpedo.add(body);
+    const nose = new THREE.Mesh(new THREE.ConeGeometry(0.18, 0.42, 12), detailMaterial);
+    nose.position.y = 0.78;
+    torpedo.add(nose);
+    const tailFin = new THREE.BoxGeometry(0.48, 0.12, 0.08);
+    for (const rotation of [0, Math.PI / 2]) {
+      const fin = new THREE.Mesh(tailFin, detailMaterial);
+      fin.position.y = -0.54;
+      fin.rotation.y = rotation;
+      torpedo.add(fin);
+    }
+    torpedo.traverse((part) => {
+      if (part.isMesh) part.renderOrder = 2;
+    });
+    return torpedo;
   }
 
   createMissileMesh(team) {
@@ -2221,29 +2316,29 @@ class Battlefield {
 
   spawnTorpedoBubble(position) {
     const material = new THREE.MeshBasicMaterial({
-      color: 0xc3dddc,
+      color: 0x8cf7ff,
       transparent: true,
-      opacity: 0.48,
+      opacity: 0.82,
       depthWrite: false,
       depthTest: false,
     });
     const mesh = new THREE.Mesh(new THREE.SphereGeometry(1, 7, 6), material);
     mesh.position.copy(position);
-    const size = 0.055 + Math.random() * 0.035;
+    const size = 0.12 + Math.random() * 0.08;
     mesh.scale.setScalar(size);
-    mesh.renderOrder = 1;
+    mesh.renderOrder = 2;
     this.scene.add(mesh);
     this.smokeParticles.push({
       mesh,
       material,
-      life: 0.48,
-      maxLife: 0.48,
+      life: 0.85,
+      maxLife: 0.85,
       size,
-      growth: 0.11,
-      opacity: 0.48,
+      growth: 0.16,
+      opacity: 0.82,
       velocity: new THREE.Vector3(
         (Math.random() - 0.5) * 0.08,
-        0.16 + Math.random() * 0.1,
+        0.05 + Math.random() * 0.05,
         (Math.random() - 0.5) * 0.08,
       ),
     });
