@@ -369,15 +369,27 @@ class Unit {
         return new THREE.Vector3(x, -0.43, -1.8);
       });
     }
+    if (this.config.id === "fighterJet") {
+      return [-0.62, 0.62].map((x) => {
+        const pipe = new THREE.Mesh(EXHAUST_PIPE_GEOMETRY, EXHAUST_PIPE_MATERIAL);
+        pipe.position.set(x, -0.34, -2.62);
+        pipe.scale.setScalar(0.8);
+        pipe.rotation.x = -Math.PI / 2;
+        this.root.add(pipe);
+
+        const cap = new THREE.Mesh(EXHAUST_CAP_GEOMETRY, EXHAUST_CAP_MATERIAL);
+        cap.position.set(x, -0.34, -2.62 - 0.24 * 0.8);
+        cap.scale.setScalar(0.8);
+        cap.rotation.x = -Math.PI / 2;
+        this.root.add(cap);
+        return new THREE.Vector3(x, -0.34, -2.62 - 0.28 * 0.8);
+      });
+    }
 
     let outlet;
     let scale = 1;
     let horizontal = false;
-    if (this.config.id === "fighterJet") {
-      outlet = [0.62, -0.34, -2.62];
-      scale = 0.8;
-      horizontal = true;
-    } else if (this.config.id === "helicopter") {
+    if (this.config.id === "helicopter") {
       outlet = [-0.38, 0.52, -0.9];
       scale = 0.95;
       horizontal = true;
@@ -2512,16 +2524,132 @@ class Battlefield {
       && unit.driftIntensity > 0.18;
     const moving = unit.movementSpeed > 0.5;
     const heavyPlume = weatherActive || snowDrifting;
-    unit.exhaustTimer = unit.config.id === "b52"
+    const isB52 = unit.config.id === "b52";
+    const isFighterJet = unit.config.id === "fighterJet";
+    unit.exhaustTimer = isB52
       ? moving ? 0.36 : 0.72
       : snowDrifting ? 0.16 : weatherActive ? (moving ? 0.17 : 0.4) : moving ? 0.22 : 0.72;
 
     for (const outlet of unit.exhaustPorts) {
       const position = unit.root.localToWorld(outlet.clone());
       const velocity = new THREE.Vector3(0, 0, -1).applyQuaternion(unit.root.quaternion);
-      velocity.multiplyScalar(snowDrifting ? 2.3 : weatherActive ? 1.7 : moving ? 1.1 : 0.35);
+      velocity.multiplyScalar(isB52 ? 6 : isFighterJet ? 12 : snowDrifting ? 2.3 : weatherActive ? 1.7 : moving ? 1.1 : 0.35);
       velocity.y += snowDrifting ? 0.65 : weatherActive ? 0.55 : 0.38;
-      this.spawnExhaustSmoke(position, heavyPlume, moving, velocity);
+      if (isB52) {
+        velocity.addScaledVector(unit.worldVelocity, 0.6);
+        this.spawnB52Exhaust(position, velocity, moving, heavyPlume);
+      } else if (isFighterJet) {
+        velocity.addScaledVector(unit.worldVelocity, 0.7);
+        this.spawnFighterJetExhaust(position, velocity, moving, heavyPlume);
+      } else {
+        this.spawnExhaustSmoke(position, heavyPlume, moving, velocity);
+      }
+    }
+  }
+
+  spawnB52Exhaust(position, velocity, moving, heavyPlume) {
+    const layers = [
+      {
+        color: 0xb5bfbd,
+        size: heavyPlume ? 0.17 : 0.14,
+        growth: heavyPlume ? 0.2 : 0.14,
+        stretch: 2.8,
+        opacity: heavyPlume ? 0.32 : 0.3,
+        life: 0.42,
+        speed: 0.72,
+      },
+      {
+        color: heavyPlume ? 0x9ca39e : 0x858d89,
+        size: heavyPlume ? 0.36 : 0.24,
+        growth: heavyPlume ? 0.65 : 0.4,
+        stretch: heavyPlume ? 3.8 : 3.3,
+        opacity: heavyPlume ? 0.48 : 0.26,
+        life: heavyPlume ? 1.4 : moving ? 1.25 : 0.9,
+        speed: 0.38,
+      },
+    ];
+
+    for (const layer of layers) {
+      const material = new THREE.MeshBasicMaterial({
+        color: layer.color,
+        transparent: true,
+        opacity: layer.opacity,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(EXHAUST_SMOKE_GEOMETRY, material);
+      mesh.position.copy(position);
+      const particleVelocity = velocity.clone().multiplyScalar(layer.speed).add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.22,
+        Math.random() * 0.12,
+        (Math.random() - 0.5) * 0.22,
+      ));
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), particleVelocity.clone().normalize());
+      mesh.scale.set(layer.size * 0.78, layer.size * 0.78, layer.size * layer.stretch);
+      this.scene.add(mesh);
+      this.smokeParticles.push({
+        mesh,
+        material,
+        life: layer.life,
+        maxLife: layer.life,
+        size: layer.size,
+        growth: layer.growth,
+        stretch: layer.stretch,
+        opacity: layer.opacity,
+        velocity: particleVelocity,
+      });
+    }
+  }
+
+  spawnFighterJetExhaust(position, velocity, moving, heavyPlume) {
+    const layers = [
+      {
+        color: 0xc3cbc9,
+        size: heavyPlume ? 0.16 : 0.12,
+        growth: heavyPlume ? 0.18 : 0.12,
+        stretch: 2.8,
+        opacity: heavyPlume ? 0.36 : 0.3,
+        life: 0.38,
+        speed: 0.72,
+      },
+      {
+        color: heavyPlume ? 0xa2aaa6 : 0x87908d,
+        size: heavyPlume ? 0.3 : 0.2,
+        growth: heavyPlume ? 0.54 : 0.36,
+        stretch: heavyPlume ? 3.6 : 3.2,
+        opacity: heavyPlume ? 0.38 : 0.24,
+        life: heavyPlume ? 1.25 : moving ? 1.05 : 0.8,
+        speed: 0.38,
+      },
+    ];
+
+    for (const layer of layers) {
+      const material = new THREE.MeshBasicMaterial({
+        color: layer.color,
+        transparent: true,
+        opacity: layer.opacity,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(EXHAUST_SMOKE_GEOMETRY, material);
+      mesh.position.copy(position);
+      const particleVelocity = velocity.clone().multiplyScalar(layer.speed).add(new THREE.Vector3(
+        (Math.random() - 0.5) * 0.16,
+        Math.random() * 0.1,
+        (Math.random() - 0.5) * 0.16,
+      ));
+      mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), particleVelocity.clone().normalize());
+      mesh.scale.set(layer.size * 0.78, layer.size * 0.78, layer.size * layer.stretch);
+      this.scene.add(mesh);
+      this.smokeParticles.push({
+        mesh,
+        material,
+        life: layer.life,
+        maxLife: layer.life,
+        size: layer.size,
+        growth: layer.growth,
+        stretch: layer.stretch,
+        opacity: layer.opacity,
+        velocity: particleVelocity,
+      });
     }
   }
 
