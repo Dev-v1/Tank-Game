@@ -2243,7 +2243,7 @@ class Battlefield {
       return;
     }
     this.reinforcementTimer += delta;
-    const interval = Math.max(3.2, 6 - this.levelIndex * 0.17);
+    const interval = Math.max(6.4, 12 - this.levelIndex * 0.34);
     if (this.reinforcementTimer < interval) return;
 
     this.reinforcementTimer -= interval;

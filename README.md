@@ -11,7 +11,7 @@ a 33-sector campaign.
 - Select a unit card, then click on the green side of the field to deploy.
 - Units automatically choose nearby hostiles, move into range, and fire.
 - Destroy the enemy base to capture the sector; protect your base from enemy
-  attackers. Surviving units carry into the next sector. You can field up to 18
+  attackers. Surviving units carry into the next sector. You can field up to 10
   active units at once.
 - The campaign has 33 sectors, with larger enemy forces and stronger units
   and tougher bases as you advance. Your base starts with 900 health and gains
@@ -19,7 +19,8 @@ a 33-sector campaign.
   each battle progressively tougher. Both bases are replenished at the start
   of each battle.
   Enemy units fire faster in later sectors and deploy an uncapped stream of
-  reinforcements every 8 to 4 seconds until either base is destroyed. The final
+  reinforcements every 12 to 6.4 seconds, up to the active-unit limit, until
+  either base is destroyed. The final
   sector completes the campaign; losing your base lets you retry the sector or
   restart the campaign.
 - Victories award credits, which you can spend in the field workshop to increase
