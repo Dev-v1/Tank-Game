@@ -1,9 +1,10 @@
 # Ironclad: Field Command
 
 A build-free, browser-based 3D strategy prototype. Select a tank, scout,
-artillery unit, SAM launcher, helicopter, or fighter jet, then click your side
-of the battlefield to deploy it. Units automatically engage nearby enemies and
-attack the opposing base. Defend your own base across a 20-sector campaign.
+artillery unit, SAM launcher, helicopter, fighter jet, or B-52 Stratofortress,
+then click your side of the battlefield to deploy it. Units automatically
+engage nearby enemies and attack the opposing base. Defend your own base across
+a 33-sector campaign.
 
 ## Play
 
@@ -12,7 +13,7 @@ attack the opposing base. Defend your own base across a 20-sector campaign.
 - Destroy the enemy base to capture the sector; protect your base from enemy
   attackers. Surviving units carry into the next sector. You can field up to 18
   active units at once.
-- The campaign has 20 sectors, with larger enemy forces and stronger units
+- The campaign has 33 sectors, with larger enemy forces and stronger units
   and tougher bases as you advance. Your base starts with 900 health and gains
   55 per sector; the enemy starts with 1,000 and gains 110 per sector, making
   each battle progressively tougher. Both bases are replenished at the start
@@ -31,6 +32,10 @@ attack the opposing base. Defend your own base across a 20-sector campaign.
   on land or launch from your deployed aircraft carrier in ocean battles.
   Deploy a carrier before selecting a helicopter or fighter jet at sea.
   Submarines deploy and fight alongside the carrier fleet.
+- The player-only B-52 Stratofortress is available in all 33 sectors. Its eight
+  engines emit exhaust, and its underside bay carries up to four guided
+  missiles as its only weapon. Missiles launch directly toward enemy targets
+  with a smoke trail.
 - SAM launchers use smoke-trailing missiles against all enemy vehicle types.
   Both sides use them in land battles from sector 2 onward.
 
