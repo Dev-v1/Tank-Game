@@ -31,7 +31,7 @@
         background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.22'/%3E%3C/svg%3E");
       }
       .vignette { background: radial-gradient(ellipse at center, transparent 38%, rgba(7, 12, 12, .57) 100%); }
-      .topbar, .side-panel, .upgrade-panel, .unit-deck, .toast { position: fixed; z-index: 2; }
+      .topbar, .side-panel, .upgrade-panel, .unit-deck, .camera-controls, .toast { position: fixed; z-index: 2; }
       .topbar {
         top: 0; left: 0; right: 0; height: 70px; padding: 0 28px;
         display: flex; align-items: center; justify-content: space-between;
@@ -111,6 +111,23 @@
       .unit-card:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
       .unit-card-name { display: block; overflow: hidden; color: var(--ink); font: 700 15px "Barlow Condensed", sans-serif; letter-spacing: .07em; text-overflow: ellipsis; text-transform: uppercase; white-space: nowrap; }
       .unit-card-detail { display: block; margin-top: 5px; color: var(--muted); font: 9px "DM Mono", monospace; }
+      .camera-controls {
+        left: 16px; bottom: 14px; display: grid; grid-template-columns: repeat(4, auto);
+        gap: 5px; align-items: center; padding: 8px;
+        border: 1px solid var(--line); background: var(--panel); backdrop-filter: blur(12px);
+      }
+      .camera-label {
+        grid-column: 1 / -1; color: var(--muted); font: 8px "DM Mono", monospace;
+        letter-spacing: .14em;
+      }
+      .camera-controls button {
+        min-height: 28px; padding: 0 8px; border: 1px solid var(--line);
+        background: rgba(255, 255, 255, .035); color: var(--ink);
+        font: 8px "DM Mono", monospace; cursor: pointer;
+      }
+      .camera-controls button:hover, .camera-controls button:focus-visible {
+        border-color: var(--lime); color: var(--lime);
+      }
       .toast {
         top: 88px; left: 50%; transform: translate(-50%, -8px); opacity: 0;
         max-width: calc(100vw - 24px); padding: 10px 14px; border: 1px solid rgba(215, 240, 106, .45);
@@ -153,6 +170,8 @@
         .deck-meta { gap: 4px; font-size: 6px; }
         .unit-list { max-height: min(calc(40vh - 50px), 220px); gap: 5px; padding: 2px 2px 5px; }
         .unit-card { min-height: 48px; padding: 6px; }
+        .camera-controls { left: 10px; bottom: 8px; gap: 4px; padding: 6px; }
+        .camera-controls button { min-height: 25px; padding: 0 5px; font-size: 7px; }
       }
       @media (max-width: 390px) {
         .side-panel { width: 46vw; }
@@ -220,6 +239,16 @@
       </div>
       <div class="unit-list" id="unitList" tabindex="0" aria-label="Scrollable list of military vehicles"></div>
     </nav>
+    <nav class="camera-controls" aria-label="Battlefield camera controls">
+      <span class="camera-label">CAMERA · RIGHT-DRAG ORBITS · SHIFT-DRAG PANS · WHEEL ZOOMS</span>
+      <button type="button" data-camera="rotate-left" aria-label="Rotate camera left">ROTATE -</button>
+      <button type="button" data-camera="rotate-right" aria-label="Rotate camera right">ROTATE +</button>
+      <button type="button" data-camera="tilt-up" aria-label="Tilt camera up">TILT +</button>
+      <button type="button" data-camera="tilt-down" aria-label="Tilt camera down">TILT -</button>
+      <button type="button" data-camera="zoom-out" aria-label="Zoom out">ZOOM -</button>
+      <button type="button" data-camera="zoom-in" aria-label="Zoom in">ZOOM +</button>
+      <button type="button" data-camera="reset" aria-label="Reset camera">RESET VIEW</button>
+    </nav>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <section class="mission-message" id="missionMessage" role="dialog" aria-modal="true" aria-labelledby="messageTitle" hidden>
       <div class="eyebrow" id="messageEyebrow">SECTOR SECURED</div>
@@ -229,6 +258,6 @@
       <button class="action-button secondary" id="messageSecondary" type="button" hidden>RETRY SECTOR</button>
     </section>
 
-    <script type="module" src="./main.js?v=b52-direct-missiles"></script>
+    <script type="module" src="./main.js?v=expanded-vehicle-roster-3"></script>
   </body>
 </html>

@@ -1,25 +1,42 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
 
-const FIELD_WIDTH = 72;
-const FIELD_DEPTH = 100;
-const ENEMY_BASE = new THREE.Vector3(0, 0, -42);
+const MAP_SCALE = 2;
+const MAX_CAMERA_DISTANCE = 480;
+const FIELD_WIDTH = 120 * MAP_SCALE;
+const FIELD_DEPTH = 180 * MAP_SCALE;
+const ENEMY_BASE = new THREE.Vector3(0, 0, -FIELD_DEPTH / 2 + 5);
 const PLAYER_BASE = new THREE.Vector3(0, 0, FIELD_DEPTH / 2 - 5);
 const DEPLOYMENT_LINE_Z = 0;
 const PLAYER_BASE_HEALTH = 900;
 const PLAYER_BASE_HEALTH_INCREASE = 55;
 const ENEMY_BASE_HEALTH_START = 1000;
 const ENEMY_BASE_HEALTH_INCREASE = 110;
-const MAX_UNITS_PER_TEAM = 10;
-const MAX_WEAPON_UPGRADE_LEVEL = 5;
+const MAX_UNITS_PER_TEAM = 20;
+const MAX_WEAPON_UPGRADE_LEVEL = 10;
 const WEAPON_UPGRADE_BASE_COST = 180;
 const B52_ENGINE_X_POSITIONS = [-6.15, -5.45, -3.25, -2.55, 2.55, 3.25, 5.45, 6.15];
 const UNIT_CATALOG = [
   { id: "tank", name: "Main battle tank", shortName: "Battle tank", speed: 5.2, hp: 180, damage: 30, range: 18, cooldown: 1.1, projectileSpeed: 26, detectionRange: 34, color: 0x829264, domain: "land", weapon: "cannon" },
   { id: "scout", name: "Recon scout", shortName: "Recon scout", speed: 8.5, hp: 90, damage: 14, range: 13, cooldown: 0.65, projectileSpeed: 30, detectionRange: 30, color: 0x9aab70, domain: "land", weapon: "gun" },
   { id: "artillery", name: "Field artillery", shortName: "Artillery", speed: 3.4, hp: 160, damage: 48, range: 30, cooldown: 2.2, projectileSpeed: 24, detectionRange: 42, color: 0x777e68, domain: "land", weapon: "shell" },
+  { id: "tankDestroyer", name: "Tank destroyer", shortName: "Tank destroyer", speed: 3.8, hp: 205, damage: 64, range: 35, cooldown: 2.7, projectileSpeed: 38, detectionRange: 48, color: 0x717a60, domain: "land", weapon: "cannon" },
+  { id: "armoredCar", name: "Armored scout car", shortName: "Scout car", speed: 9.5, hp: 105, damage: 10, range: 16, cooldown: 0.4, projectileSpeed: 35, detectionRange: 42, color: 0x8c8968, domain: "land", weapon: "gun" },
+  { id: "heavyTank", name: "Heavy tank", shortName: "Heavy tank", speed: 3.4, hp: 330, damage: 50, range: 22, cooldown: 1.6, projectileSpeed: 26, detectionRange: 38, color: 0x687253, domain: "land", weapon: "cannon" },
+  { id: "mortarCarrier", name: "Self-propelled mortar carrier", shortName: "Mortar carrier", speed: 4.2, hp: 145, damage: 38, range: 34, cooldown: 2.6, projectileSpeed: 26, detectionRange: 48, color: 0x757b68, domain: "land", weapon: "shell" },
+  { id: "lightTank", name: "Light tank", shortName: "Light tank", speed: 7.1, hp: 145, damage: 23, range: 20, cooldown: 0.85, projectileSpeed: 29, detectionRange: 36, color: 0x8a956b, domain: "land", weapon: "cannon" },
+  { id: "mobileAA", name: "Mobile anti-aircraft gun", shortName: "Mobile AA", speed: 5.8, hp: 155, damage: 7, range: 30, cooldown: 0.28, projectileSpeed: 42, detectionRange: 46, color: 0x78836a, domain: "land", weapon: "gun" },
+  { id: "recoveryVehicle", name: "Armored recovery vehicle", shortName: "Recovery vehicle", speed: 4, hp: 240, damage: 5, range: 14, cooldown: 0.9, projectileSpeed: 26, detectionRange: 30, color: 0x8c8968, domain: "land", weapon: "gun", supportHeal: 20, supportRange: 12, supportCooldown: 2 },
+  { id: "siegeTank", name: "Siege tank", shortName: "Siege tank", speed: 2.6, hp: 360, damage: 76, range: 31, cooldown: 3.2, projectileSpeed: 30, detectionRange: 44, color: 0x687253, domain: "land", weapon: "cannon" },
+  { id: "tankHunter", name: "Tank hunter missile vehicle", shortName: "Tank hunter", speed: 5.2, hp: 155, damage: 28, range: 39, cooldown: 2.4, projectileSpeed: 36, detectionRange: 50, color: 0x737b68, domain: "land", weapon: "missile", volleyCount: 2, muzzleOffsets: [[-0.62, 1.65, 0.3], [0.62, 1.65, 0.3]] },
+  { id: "mobileCommand", name: "Mobile command vehicle", shortName: "Mobile command", speed: 4.6, hp: 185, damage: 5, range: 16, cooldown: 0.7, projectileSpeed: 30, detectionRange: 60, color: 0x8c8968, domain: "land", weapon: "gun", supportHeal: 12, supportRange: 15, supportCooldown: 2.8 },
+  { id: "amphibiousRecon", name: "Amphibious reconnaissance vehicle", shortName: "Amphibious recon", speed: 7.2, hp: 125, damage: 12, range: 17, cooldown: 0.5, projectileSpeed: 34, detectionRange: 52, color: 0x6f897d, domain: "amphibious", weapon: "gun" },
+  { id: "attackDrone", name: "Armed reconnaissance drone", shortName: "Attack drone", speed: 10.5, hp: 100, damage: 25, range: 30, cooldown: 2.1, projectileSpeed: 38, detectionRange: 50, color: 0x7d928a, air: true, domain: "air", weapon: "missile", volleyCount: 2, muzzleOffsets: [[-0.7, -0.15, 0.2], [0.7, -0.15, 0.2]] },
+  { id: "destroyer", name: "Guided missile destroyer", shortName: "Destroyer", speed: 3.8, hp: 470, damage: 36, range: 36, cooldown: 2, projectileSpeed: 31, detectionRange: 48, color: 0x65736d, domain: "water", weapon: "missile", volleyCount: 2, muzzleOffsets: [[-1.6, 1.5, -2.5], [1.6, 1.5, -2.5]], secondaryWeapon: "gun", secondaryDamage: 8, secondaryCooldown: 0.42, secondaryRange: 18, secondaryProjectileSpeed: 36 },
+  { id: "howitzer", name: "Self-propelled howitzer", shortName: "Howitzer", speed: 2.9, hp: 150, damage: 58, range: 48, cooldown: 3.8, projectileSpeed: 27, detectionRange: 56, color: 0x777e68, domain: "land", weapon: "shell" },
   { id: "ifv", name: "Infantry fighting vehicle", shortName: "IFV", speed: 6.4, hp: 165, damage: 8, range: 19, cooldown: 0.34, projectileSpeed: 38, detectionRange: 36, color: 0x87916a, domain: "land", weapon: "gun", secondaryWeapon: "gun", secondaryDamage: 4, secondaryCooldown: 0.62, secondaryRange: 14, secondaryProjectileSpeed: 36 },
   { id: "apc", name: "Armored personnel carrier", shortName: "APC", speed: 6.8, hp: 205, damage: 4, range: 16, cooldown: 0.9, projectileSpeed: 34, detectionRange: 34, color: 0x78846a, domain: "land", weapon: "gun", volleyCount: 3, muzzleOffsets: [[-0.62, 1.4, 1.15], [0, 1.55, 1.3], [0.62, 1.4, 1.15]] },
   { id: "mlrs", name: "Rocket artillery", shortName: "MLRS", speed: 2.8, hp: 115, damage: 14, range: 42, cooldown: 3.2, projectileSpeed: 32, detectionRange: 50, color: 0x737b68, domain: "land", weapon: "missile", volleyCount: 4, muzzleOffsets: [[-0.72, 1.8, -0.5], [-0.24, 1.8, -0.5], [0.24, 1.8, -0.5], [0.72, 1.8, -0.5]] },
+  { id: "heavyMlrs", name: "Heavy rocket artillery", shortName: "Heavy MLRS", speed: 2.3, hp: 170, damage: 22, range: 50, cooldown: 4.1, projectileSpeed: 34, detectionRange: 58, color: 0x6d7565, domain: "land", weapon: "missile", volleyCount: 6, muzzleOffsets: [[-0.9, 1.9, -0.6], [-0.54, 1.9, -0.6], [-0.18, 1.9, -0.6], [0.18, 1.9, -0.6], [0.54, 1.9, -0.6], [0.9, 1.9, -0.6]] },
   { id: "engineer", name: "Combat engineer vehicle", shortName: "Engineer", speed: 4.8, hp: 175, damage: 6, range: 15, cooldown: 0.55, projectileSpeed: 32, detectionRange: 32, color: 0x8c8968, domain: "land", weapon: "gun", supportHeal: 14, supportRange: 9, supportCooldown: 2.4 },
   { id: "helicopter", name: "Attack helicopter", shortName: "Helicopter", speed: 9.2, hp: 130, damage: 4, range: 24, cooldown: 0.4, projectileSpeed: 48, detectionRange: 36, color: 0x73845d, air: true, domain: "air", weapon: "gun", muzzleOffsets: [[0, -0.28, 1.85]], secondaryWeapon: "missile", secondaryDamage: 18, secondaryCooldown: 5.2, secondaryRange: 24, secondaryProjectileSpeed: 34, secondaryMuzzleOffsets: [[-1.1, -0.2, 0.4], [1.1, -0.2, 0.4]] },
   { id: "reconDrone", name: "Recon drone", shortName: "Recon drone", speed: 10, hp: 75, damage: 3, range: 17, cooldown: 0.32, projectileSpeed: 42, detectionRange: 58, color: 0x7d928a, air: true, domain: "air", weapon: "gun", muzzleOffsets: [[0, -0.23, 1.17]] },
@@ -34,9 +51,24 @@ const UNIT_SPACING_RADII = {
   tank: 2,
   scout: 1.5,
   artillery: 2.3,
+  tankDestroyer: 2.8,
+  armoredCar: 2.1,
+  heavyTank: 3.5,
+  mortarCarrier: 2.7,
+  lightTank: 2.2,
+  mobileAA: 2.6,
+  recoveryVehicle: 2.8,
+  siegeTank: 3.8,
+  tankHunter: 3,
+  mobileCommand: 2.8,
+  amphibiousRecon: 2.8,
+  attackDrone: 3.5,
+  destroyer: 6,
+  howitzer: 2.6,
   ifv: 2.2,
   apc: 2.5,
   mlrs: 2.6,
+  heavyMlrs: 3,
   engineer: 2.4,
   helicopter: 3.2,
   reconDrone: 1.4,
@@ -58,9 +90,9 @@ const LEVELS = [
     baseHealth: ENEMY_BASE_HEALTH_START,
     enemyStrength: 0.82,
     enemies: [
-      { type: "scout", x: -8, z: -28 },
-      { type: "tank", x: 7, z: -31 },
-      { type: "scout", x: 1, z: -22 },
+      { type: "scout", x: -18, z: -59 },
+      { type: "tank", x: 16, z: -65 },
+      { type: "scout", x: 2, z: -51 },
     ],
   },
   {
@@ -73,12 +105,12 @@ const LEVELS = [
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE,
     enemyStrength: 1.12,
     enemies: [
-      { type: "tank", x: -12, z: -31 },
-      { type: "scout", x: 10, z: -29 },
-      { type: "artillery", x: -3, z: -35 },
-      { type: "helicopter", x: 7, z: -24 },
-      { type: "sam", x: -10, z: -23 },
-      { type: "tank", x: 0, z: -20 },
+      { type: "tank", x: -25, z: -65 },
+      { type: "scout", x: 22, z: -60 },
+      { type: "artillery", x: -7, z: -71 },
+      { type: "helicopter", x: 16, z: -55 },
+      { type: "sam", x: -22, z: -53 },
+      { type: "tank", x: 0, z: -50 },
     ],
   },
   {
@@ -91,15 +123,15 @@ const LEVELS = [
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE * 2,
     enemyStrength: 1.42,
     enemies: [
-      { type: "tank", x: -14, z: -32 },
-      { type: "artillery", x: 12, z: -34 },
-      { type: "scout", x: -6, z: -24 },
-      { type: "helicopter", x: 6, z: -26 },
-      { type: "tank", x: 1, z: -37 },
-      { type: "artillery", x: -12, z: -20 },
-      { type: "scout", x: 13, z: -21 },
-      { type: "fighterJet", x: 12, z: -24 },
-      { type: "sam", x: -1, z: -28 },
+      { type: "tank", x: -30, z: -67 },
+      { type: "artillery", x: 26, z: -70 },
+      { type: "scout", x: -13, z: -55 },
+      { type: "helicopter", x: 13, z: -58 },
+      { type: "tank", x: 2, z: -75 },
+      { type: "artillery", x: -26, z: -50 },
+      { type: "scout", x: 28, z: -52 },
+      { type: "fighterJet", x: 25, z: -55 },
+      { type: "sam", x: -2, z: -60 },
     ],
   },
   ...[
@@ -111,9 +143,9 @@ const LEVELS = [
     ["Broken Arrow", "The enemy has regrouped. Defeat their counterattack.", 0x85817c, 0xb9b09e, 0xd16c4e, false, "rain"],
     ["Ashfall Crater", "Fight through the ash-covered perimeter to reach the base.", 0x747a7c, 0xaaa9a1, 0xc6533f, false, "ash"],
     ["Red Mesa", "Take the mesa before the defenders can reinforce it.", 0x9c8170, 0xc8a58d, 0xd87a4f, false, "sandstorm"],
-    ["Wolf's Run", "Push down the narrow valley and eliminate the hostile force.", 0x7d8779, 0xb0b69d, 0xc6533f, false, "fog"],
+    ["Wolf's Run", "Push down the narrow valley and eliminate the hostile force.", 0x7d8779, 0xb0b69d, 0xc6533f],
     ["Stormwatch Fleet", "Fight through the storm and destroy the opposing carrier group.", 0x707c82, 0xffffff, 0x408c9c, true, "storm"],
-    ["Blackwater Coast", "Send submarines into the coastal waters and clear the hostile fleet.", 0x73847e, 0xffffff, 0x408c9c, true, "fog"],
+    ["Blackwater Coast", "Send submarines into the coastal waters and clear the hostile fleet.", 0x73847e, 0xffffff, 0x408c9c, true],
     ["Cobalt Quarry", "Capture the quarry and clear its heavy defenses.", 0x78818a, 0xb5b7b2, 0xd16c4e, false, "rain"],
     ["Dead Man's Ridge", "Break the ridge defenses and keep your own base secure.", 0x827c72, 0xb5a98f, 0xc6533f, false, "wind"],
     ["Cinderworks", "Overrun the industrial perimeter and target the enemy base.", 0x797b7c, 0xb3aaa0, 0xd87a4f, false, "ash"],
@@ -127,8 +159,8 @@ const LEVELS = [
     ["Typhoon Shelf", "Break the blockade as towering waves and gale-force rain hit the fleet.", 0x566d7a, 0xffffff, 0x408c9c, true, "storm"],
     ["Dust Devil Flats", "Advance through violent dust devils and seize the desert outpost.", 0xa88a6d, 0xc8aa82, 0xd87a4f, false, "sandstorm"],
     ["Sirocco Basin", "Survive the scorching sandstorm and destroy the enemy command post.", 0x9a755f, 0xc4a47f, 0xc6533f, false, "sandstorm"],
-    ["Mistwood Crossing", "Find the enemy through thick woodland fog and secure the crossing.", 0x687a72, 0x9da99a, 0xc6533f, false, "fog"],
-    ["Fogbound Sound", "Hunt the enemy fleet through dense coastal fog.", 0x647b83, 0xffffff, 0x408c9c, true, "fog"],
+    ["Woodland Crossing", "Find the enemy through dense woodland and secure the crossing.", 0x687a72, 0x9da99a, 0xc6533f],
+    ["Openwater Sound", "Hunt the enemy fleet through the open coastal sound.", 0x647b83, 0xffffff, 0x408c9c, true],
     ["Ashen Fields", "Fight across the ash-covered plain beneath a dark falling haze.", 0x686b6a, 0x98948b, 0xc6533f, false, "ash"],
     ["Sleetwater Strait", "Navigate the sleet-filled strait and break the naval defenses.", 0x74838b, 0xe2e8e8, 0x408c9c, true, "snow"],
     ["Gale Force Ridge", "Climb the exposed ridge while crosswinds disrupt the advance.", 0x77827d, 0xb4b6a9, 0xd16c4e, false, "wind"],
@@ -143,26 +175,25 @@ const LEVELS = [
     weather,
     baseHealth: ENEMY_BASE_HEALTH_START + ENEMY_BASE_HEALTH_INCREASE * (index + 3),
     enemyStrength: 1.5 + index * 0.06,
-    enemies: Array.from({ length: 7 + Math.floor(index / 3) }, (_, unitIndex) => {
+    enemies: Array.from({ length: Math.min(MAX_UNITS_PER_TEAM, 9 + Math.floor(index / 2)) }, (_, unitIndex) => {
       const enemyTypes = ocean
-        ? ["carrier", "submarine", "fighterJet", "helicopter", "reconDrone", "amphibious"]
-        : ["tank", "artillery", "scout", "ifv", "apc", "mlrs", "engineer", "helicopter", "reconDrone", "fighterJet", "amphibious", "sam"];
+        ? ["carrier", "submarine", "destroyer", "fighterJet", "helicopter", "reconDrone", "attackDrone", "amphibious", "amphibiousRecon"]
+        : ["tank", "artillery", "tankDestroyer", "armoredCar", "heavyTank", "mortarCarrier", "lightTank", "mobileAA", "recoveryVehicle", "siegeTank", "tankHunter", "mobileCommand", "howitzer", "scout", "ifv", "apc", "mlrs", "heavyMlrs", "engineer", "helicopter", "reconDrone", "attackDrone", "fighterJet", "amphibious", "amphibiousRecon", "sam"];
       return {
         type: enemyTypes[(unitIndex + index) % enemyTypes.length],
-        x: ((unitIndex % 4) - 1.5) * 8,
-        z: -18 - Math.floor(unitIndex / 4) * 9 - (unitIndex % 2) * 2,
+        x: ((unitIndex % 6) - 2.5) * 13,
+        z: -38 - Math.floor(unitIndex / 6) * 12 - (unitIndex % 2) * 2,
       };
     }),
   })),
 ];
 const WEATHER_PRESETS = {
-  snow: { count: 420, color: 0xe9f3f5, size: 0.34, opacity: 0.82, fallSpeed: 4.5, windX: 3.2, windZ: 1.2, fogNear: 45, fogFar: 125 },
-  rain: { count: 650, color: 0xa9c3d0, size: 0.14, opacity: 0.58, fallSpeed: 19, windX: 2.4, windZ: 1.2, fogNear: 60, fogFar: 155 },
-  storm: { count: 820, color: 0xb9cbd2, size: 0.16, opacity: 0.7, fallSpeed: 25, windX: 8.5, windZ: -4.5, fogNear: 32, fogFar: 110 },
-  sandstorm: { count: 520, color: 0xc3a173, size: 0.32, opacity: 0.55, fallSpeed: 3.5, windX: 12, windZ: -5, fogNear: 24, fogFar: 82 },
-  fog: { count: 320, color: 0xc9d2d3, size: 0.82, opacity: 0.16, fallSpeed: 0.15, windX: 0.7, windZ: -0.35, fogNear: 18, fogFar: 85 },
-  wind: { count: 300, color: 0xc6c6aa, size: 0.25, opacity: 0.4, fallSpeed: 1.3, windX: 10, windZ: -3, fogNear: 65, fogFar: 145 },
-  ash: { count: 440, color: 0x9c988e, size: 0.25, opacity: 0.55, fallSpeed: 2.4, windX: 4.5, windZ: -1.5, fogNear: 35, fogFar: 115 },
+  snow: { count: 420, color: 0xe9f3f5, size: 0.34, opacity: 0.82, fallSpeed: 4.5, windX: 3.2, windZ: 1.2 },
+  rain: { count: 650, color: 0xa9c3d0, size: 0.14, opacity: 0.58, fallSpeed: 19, windX: 2.4, windZ: 1.2 },
+  storm: { count: 820, color: 0xb9cbd2, size: 0.16, opacity: 0.7, fallSpeed: 25, windX: 8.5, windZ: -4.5 },
+  sandstorm: { count: 520, color: 0xc3a173, size: 0.32, opacity: 0.55, fallSpeed: 3.5, windX: 12, windZ: -5 },
+  wind: { count: 300, color: 0xc6c6aa, size: 0.25, opacity: 0.4, fallSpeed: 1.3, windX: 10, windZ: -3 },
+  ash: { count: 440, color: 0x9c988e, size: 0.25, opacity: 0.55, fallSpeed: 2.4, windX: 4.5, windZ: -1.5 },
 };
 const TREAD_LINK_COUNT = 40;
 const TREAD_LINK_GEOMETRY = new THREE.BoxGeometry(0.48, 0.14, 0.17);
@@ -341,7 +372,7 @@ class Unit {
     this.destroyed = false;
     this.buildModel();
     this.exhaustPorts = this.createExhaustPipes();
-    this.exhaustTimer = Math.random() * 0.2;
+    this.exhaustTimer = config.id === "b52" ? 0 : Math.random() * 0.2;
     this.movementSpeed = 0;
     this.driftIntensity = 0;
     this.movementVelocity = new THREE.Vector2();
@@ -1033,6 +1064,310 @@ class RocketArtillery extends Unit {
   }
 }
 
+class TankDestroyer extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    addBox(this.root, body, [2.7, 0.8, 4.2], [0, 0.7, 0]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 0, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.4, 0.4, 0.2, [side * 1.4, 0.42, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    addBox(this.root, body, [2.1, 0.8, 1.5], [0, 1.45, -0.5]);
+    const barrel = addCylinder(this.root, dark, 0.15, 0.2, 3.4, [0, 1.5, 0.85]);
+    barrel.rotation.x = Math.PI / 2;
+  }
+}
+
+class ArmoredScoutCar extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const glass = standardMaterial(0x9aada2, { metalness: 0.3, roughness: 0.36 });
+    addBox(this.root, body, [2.4, 0.78, 4], [0, 0.78, 0]);
+    addBox(this.root, body, [2.05, 0.62, 1.45], [0, 1.38, 1.02]);
+    addBox(this.root, body, [1.65, 0.8, 1.65], [0, 1.55, -0.55]);
+    addBox(this.root, glass, [1.52, 0.34, 0.1], [0, 1.57, 0.92]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.48, 0.48, 0.25, [side * 1.25, 0.48, axle], 12);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    const gun = addCylinder(this.root, dark, 0.06, 0.09, 1.15, [0, 2.02, -0.25], 8);
+    gun.rotation.x = Math.PI / 2;
+  }
+}
+
+class HeavyTank extends Tank {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    addBox(this.root, body, [3, 0.9, 4.3], [0, 0.88, 0]);
+    for (const side of [-1, 1]) {
+      this.addTread(side);
+      for (const wheel of [-1, 1]) {
+        const roller = addCylinder(this.root, TREAD_MATERIAL, 0.28, 0.28, 0.18, [side * 1.68, 0.58, wheel * 0.9]);
+        roller.rotation.z = Math.PI / 2;
+      }
+    }
+    const turret = new THREE.Group();
+    turret.position.set(0, 1.5, 0);
+    this.root.add(turret);
+    addBox(turret, body, [2.2, 0.9, 2.1], [0, 0, 0]);
+    const barrel = addCylinder(turret, TREAD_MATERIAL, 0.16, 0.22, 2.6, [0, 0.1, 1.65]);
+    barrel.rotation.x = Math.PI / 2;
+    addBox(this.root, body, [0.65, 0.5, 1.6], [0, 1.25, -2.55]);
+  }
+}
+
+class SelfPropelledMortarCarrier extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    addBox(this.root, body, [2.7, 0.82, 4.2], [0, 0.72, 0]);
+    for (const side of [-1, 1]) {
+      addBox(this.root, dark, [0.42, 0.78, 4], [side * 1.42, 0.48, 0]);
+    }
+    addBox(this.root, body, [2.2, 0.9, 2.1], [0, 1.45, -0.4]);
+    for (const x of [-0.48, 0.48]) {
+      const tube = addCylinder(this.root, dark, 0.13, 0.19, 2.4, [x, 1.95, 0.55]);
+      tube.rotation.x = Math.PI / 2 - 0.28;
+    }
+  }
+}
+
+class LightTank extends Tank {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    addBox(this.root, body, [2.15, 0.68, 3.2], [0, 0.76, 0]);
+    for (const side of [-1, 1]) {
+      this.addTread(side);
+      const roller = addCylinder(this.root, TREAD_MATERIAL, 0.2, 0.2, 0.15, [side * 1.48, 0.48, 0]);
+      roller.rotation.z = Math.PI / 2;
+    }
+    const turret = new THREE.Group();
+    turret.position.set(0, 1.18, 0);
+    this.root.add(turret);
+    addBox(turret, body, [1.45, 0.55, 1.55], [0, 0, 0]);
+    const barrel = addCylinder(turret, TREAD_MATERIAL, 0.1, 0.13, 1.7, [0, 0.05, 1.08]);
+    barrel.rotation.x = Math.PI / 2;
+  }
+}
+
+class MobileAntiAircraftGun extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    addBox(this.root, body, [2.5, 0.82, 4], [0, 0.72, 0]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.44, 0.44, 0.22, [side * 1.3, 0.46, axle], 12);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    const turret = new THREE.Group();
+    turret.position.set(0, 1.25, -0.3);
+    this.root.add(turret);
+    addCylinder(turret, dark, 0.68, 0.68, 0.24, [0, 0, 0], 12);
+    for (const x of [-0.24, 0.24]) {
+      const barrel = addCylinder(turret, dark, 0.055, 0.075, 2, [x, 0.26, 1.05], 8);
+      barrel.rotation.x = Math.PI / 2;
+    }
+  }
+}
+
+class ArmoredRecoveryVehicle extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const metal = standardMaterial(0xa6a187, { metalness: 0.36 });
+    addBox(this.root, body, [2.8, 0.9, 4.3], [0, 0.76, 0]);
+    for (const side of [-1, 1]) {
+      addBox(this.root, dark, [0.42, 0.78, 4.1], [side * 1.48, 0.48, 0]);
+    }
+    addBox(this.root, body, [2.1, 0.86, 1.55], [0, 1.58, 0.9]);
+    const crane = new THREE.Group();
+    crane.position.set(0.65, 1.35, -0.5);
+    crane.rotation.x = -0.42;
+    this.root.add(crane);
+    addBox(crane, metal, [0.36, 0.42, 3.2], [0, 0, 0]);
+    addBox(crane, metal, [0.22, 0.72, 0.22], [0, -0.48, 1.5]);
+    addCylinder(crane, dark, 0.08, 0.08, 0.5, [0, -0.92, 1.62], 8);
+  }
+}
+
+class SiegeTank extends Tank {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    addBox(this.root, body, [3.3, 0.96, 4.7], [0, 0.88, 0]);
+    for (const side of [-1, 1]) this.addTread(side);
+    const turret = new THREE.Group();
+    turret.position.set(0, 1.55, 0);
+    this.root.add(turret);
+    addBox(turret, body, [2.45, 0.95, 2.4], [0, 0, 0]);
+    const barrel = addCylinder(turret, TREAD_MATERIAL, 0.2, 0.28, 4.1, [0, 0.1, 2.15]);
+    barrel.rotation.x = Math.PI / 2;
+  }
+}
+
+class TankHunter extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    addBox(this.root, body, [2.65, 0.84, 4.3], [0, 0.72, 0]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.25, 0, 1.25]) {
+        const wheel = addCylinder(this.root, dark, 0.4, 0.4, 0.22, [side * 1.38, 0.46, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    addBox(this.root, body, [2.05, 0.62, 1.45], [0, 1.35, 0.9]);
+    for (const side of [-1, 1]) {
+      const launcher = new THREE.Group();
+      launcher.position.set(side * 0.62, 1.55, -0.5);
+      launcher.rotation.x = -0.25;
+      this.root.add(launcher);
+      addBox(launcher, dark, [0.65, 0.42, 2.25], [0, 0, 0]);
+      const missile = addCylinder(launcher, standardMaterial(0xa6aa98), 0.11, 0.13, 2.1, [0, 0.38, 0.1], 10);
+      missile.rotation.x = Math.PI / 2 - 0.25;
+    }
+  }
+}
+
+class MobileCommandVehicle extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const glass = standardMaterial(0x9aada2, { metalness: 0.3, roughness: 0.36 });
+    addBox(this.root, body, [2.7, 0.92, 4.4], [0, 0.78, 0]);
+    addBox(this.root, body, [2.35, 0.84, 1.8], [0, 1.62, 0.7]);
+    addBox(this.root, glass, [1.7, 0.38, 0.12], [0, 1.73, 1.62]);
+    for (const side of [-1, 1]) {
+      for (const axle of [-1.35, 0, 1.35]) {
+        const wheel = addCylinder(this.root, dark, 0.44, 0.44, 0.22, [side * 1.38, 0.46, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    addCylinder(this.root, dark, 0.12, 0.12, 1.05, [0, 2.05, -0.85]);
+    this.radar = new THREE.Group();
+    this.radar.position.set(0, 2.6, -0.85);
+    this.root.add(this.radar);
+    const dish = addBox(this.radar, standardMaterial(0xb1b39c), [1.65, 0.08, 0.62], [0, 0, 0]);
+    dish.rotation.z = -0.22;
+    addBox(this.radar, dark, [0.14, 0.36, 0.14], [0, -0.16, 0]);
+  }
+
+  animate(delta) {
+    this.radar.rotation.y += delta * 1.1;
+  }
+}
+
+class AmphibiousRecon extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    const glass = standardMaterial(0x9aada2, { metalness: 0.3, roughness: 0.36 });
+    addBox(this.root, body, [2.65, 0.78, 4.2], [0, 0.72, 0]);
+    for (const side of [-1, 1]) {
+      addBox(this.root, standardMaterial(0x58766d), [0.42, 0.68, 4.1], [side * 1.48, 0.48, 0]);
+      for (const axle of [-1.2, 0, 1.2]) {
+        const wheel = addCylinder(this.root, dark, 0.34, 0.34, 0.18, [side * 1.66, 0.4, axle], 10);
+        wheel.rotation.z = Math.PI / 2;
+      }
+    }
+    addBox(this.root, body, [1.85, 0.68, 1.6], [0, 1.38, 0.72]);
+    addBox(this.root, glass, [1.48, 0.32, 0.1], [0, 1.47, 1.52]);
+    addCylinder(this.root, dark, 0.1, 0.12, 0.8, [0, 1.9, -1.05]);
+    const sensor = new THREE.Mesh(new THREE.SphereGeometry(0.18, 8, 6), glass);
+    sensor.position.set(0, 2.38, -1.05);
+    this.root.add(sensor);
+  }
+}
+
+class ArmedReconDrone extends Unit {
+  buildModel() {
+    this.root.position.y = this.carrierLaunch ? 1.2 : 5.2;
+    this.flightTime = 0;
+    const body = standardMaterial(this.config.color, { metalness: 0.25 });
+    const dark = standardMaterial(0x303832, { metalness: 0.3 });
+    addBox(this.root, body, [1.25, 0.4, 2.1], [0, 0, 0]);
+    const wing = addBox(this.root, body, [5.2, 0.16, 0.9], [0, 0.04, 0.05]);
+    wing.rotation.z = -0.04;
+    addBox(this.root, body, [0.2, 0.12, 1.55], [0, 0.05, -1.35]);
+    this.rotors = [];
+    for (const x of [-1, 1]) {
+      const rotor = new THREE.Group();
+      rotor.position.set(x * 2.2, 0.15, 0.1);
+      this.root.add(rotor);
+      addBox(rotor, dark, [1.25, 0.06, 0.1], [0, 0, 0]);
+      this.rotors.push(rotor);
+    }
+    for (const x of [-0.7, 0.7]) {
+      const missile = addCylinder(this.root, dark, 0.07, 0.09, 1.05, [x, -0.17, 0.45], 8);
+      missile.rotation.x = Math.PI / 2;
+    }
+  }
+
+  animate(delta) {
+    this.flightTime += delta;
+    for (const rotor of this.rotors) rotor.rotation.y += delta * 22;
+    if (!this.carrierLaunch) this.root.position.y = 5.2 + Math.sin(this.flightTime * 2.4) * 0.12;
+  }
+}
+
+class GuidedMissileDestroyer extends Unit {
+  buildModel() {
+    const hull = standardMaterial(this.config.color, { metalness: 0.28, roughness: 0.48 });
+    const deck = standardMaterial(0x697571);
+    const dark = standardMaterial(0x343b37, { metalness: 0.4 });
+    const markings = standardMaterial(0xc2c5b3);
+    addBox(this.root, hull, [6.2, 1.1, 16], [0, 0.12, 0]);
+    addBox(this.root, deck, [5.5, 0.28, 14.5], [0, 0.82, 0]);
+    addBox(this.root, hull, [2.1, 2, 2.7], [-1.25, 1.85, -2.6]);
+    addBox(this.root, markings, [0.12, 0.03, 7], [1.4, 1.0, 0.5]);
+    for (const z of [-5, -2, 3]) {
+      addBox(this.root, standardMaterial(0x829084), [2.2, 0.55, 1.2], [0.3, 1.2, z]);
+    }
+    for (const [x, z] of [[-2.2, 5.2], [2.2, 5.2], [-2.2, -6.1], [2.2, -6.1]]) {
+      addCylinder(this.root, dark, 0.28, 0.32, 0.24, [x, 1.15, z]);
+      const barrel = addCylinder(this.root, dark, 0.07, 0.09, 1.1, [x, 1.36, z + 0.62], 8);
+      barrel.rotation.x = Math.PI / 2;
+    }
+    addCylinder(this.root, dark, 0.12, 0.12, 1.6, [0.8, 1.55, -0.5]);
+    const radar = addBox(this.root, markings, [1.15, 0.08, 0.42], [0.8, 2.38, -0.5]);
+    radar.rotation.z = -0.18;
+  }
+}
+
+class SelfPropelledHowitzer extends Unit {
+  buildModel() {
+    const body = standardMaterial(this.config.color);
+    const dark = standardMaterial(0x30372f);
+    addBox(this.root, body, [2.8, 0.8, 4.4], [0, 0.7, 0]);
+    for (const side of [-1, 1]) {
+      addBox(this.root, dark, [0.42, 0.72, 4.2], [side * 1.48, 0.48, 0]);
+    }
+    addBox(this.root, body, [2.1, 1.25, 2.2], [0, 1.55, -0.45]);
+    const barrel = addCylinder(this.root, dark, 0.19, 0.26, 4.8, [0, 2.1, 0.85]);
+    barrel.rotation.x = Math.PI / 2 - 0.22;
+  }
+}
+
+class HeavyRocketArtillery extends RocketArtillery {
+  buildModel() {
+    super.buildModel();
+    const dark = standardMaterial(0x30372f, { metalness: 0.2 });
+    const pod = addBox(this.root, dark, [2.65, 0.2, 2.4], [0, 2.25, -0.55]);
+    pod.rotation.x = -0.28;
+    for (const x of [-0.9, -0.54, -0.18, 0.18, 0.54, 0.9]) {
+      const missile = addCylinder(this.root, standardMaterial(0xa6aa98), 0.1, 0.1, 1.85, [x, 2.46, -0.55], 8);
+      missile.rotation.x = Math.PI / 2 - 0.28;
+    }
+  }
+}
+
 class EngineerVehicle extends Unit {
   buildModel() {
     const body = standardMaterial(this.config.color);
@@ -1440,9 +1775,24 @@ const UNIT_TYPES = {
   tank: Tank,
   scout: ReconScout,
   artillery: Artillery,
+  tankDestroyer: TankDestroyer,
+  armoredCar: ArmoredScoutCar,
+  heavyTank: HeavyTank,
+  mortarCarrier: SelfPropelledMortarCarrier,
+  lightTank: LightTank,
+  mobileAA: MobileAntiAircraftGun,
+  recoveryVehicle: ArmoredRecoveryVehicle,
+  siegeTank: SiegeTank,
+  tankHunter: TankHunter,
+  mobileCommand: MobileCommandVehicle,
+  amphibiousRecon: AmphibiousRecon,
+  attackDrone: ArmedReconDrone,
+  destroyer: GuidedMissileDestroyer,
+  howitzer: SelfPropelledHowitzer,
   ifv: InfantryFightingVehicle,
   apc: ArmoredPersonnelCarrier,
   mlrs: RocketArtillery,
+  heavyMlrs: HeavyRocketArtillery,
   engineer: EngineerVehicle,
   sam: SamLauncher,
   helicopter: Helicopter,
@@ -1459,10 +1809,11 @@ class Battlefield {
     this.mount = $("game");
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color(0x899487);
-    this.scene.fog = new THREE.Fog(0x899487, 95, 190);
-    this.camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 260);
-    this.camera.position.set(0, 80, 84);
-    this.camera.lookAt(0, 0, 0);
+    this.camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 1000);
+    this.cameraTarget = new THREE.Vector3(0, 0, 0);
+    this.cameraSpherical = new THREE.Spherical(160, 0.78, 0);
+    this.camera.position.setFromSpherical(this.cameraSpherical).add(this.cameraTarget);
+    this.camera.lookAt(this.cameraTarget);
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
     this.renderer.setPixelRatio(window.devicePixelRatio || 1);
     this.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -1480,6 +1831,7 @@ class Battlefield {
     this.smokeParticles = [];
     this.weatherEffect = null;
     this.missileDefenseTowers = [];
+    this.cameraDrag = null;
     this.reinforcementTimer = 0;
     this.reinforcementWave = 0;
     this.selectedUnit = UNIT_CATALOG[0];
@@ -1509,10 +1861,10 @@ class Battlefield {
     sun.position.set(-34, 60, 26);
     sun.castShadow = true;
     sun.shadow.mapSize.set(2048, 2048);
-    sun.shadow.camera.left = -55;
-    sun.shadow.camera.right = 55;
-    sun.shadow.camera.top = 65;
-    sun.shadow.camera.bottom = -65;
+    sun.shadow.camera.left = -150;
+    sun.shadow.camera.right = 150;
+    sun.shadow.camera.top = 220;
+    sun.shadow.camera.bottom = -220;
     sun.shadow.bias = -0.0004;
     this.scene.add(sun);
   }
@@ -1522,6 +1874,12 @@ class Battlefield {
     this.landTexture = terrainTexture;
     this.snowTexture = this.createSnowTexture(terrainTexture);
     this.waterTexture = this.createWaterTexture();
+    for (const texture of [terrainTexture, this.snowTexture, this.waterTexture]) {
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(FIELD_WIDTH / 72, FIELD_DEPTH / 100);
+      texture.needsUpdate = true;
+    }
     terrainTexture.anisotropy = Math.min(this.renderer.capabilities.getMaxAnisotropy(), 16);
     this.snowTexture.anisotropy = terrainTexture.anisotropy;
     const terrainBump = terrainTexture.clone();
@@ -1558,7 +1916,8 @@ class Battlefield {
     this.enemyZone.position.set(0, 0.03, -FIELD_DEPTH / 4);
     this.scene.add(this.enemyZone);
 
-    const grid = new THREE.GridHelper(FIELD_DEPTH, 40, 0xa2ac8a, 0x8c9877);
+    const grid = new THREE.GridHelper(FIELD_WIDTH, 60, 0xa2ac8a, 0x8c9877);
+    grid.scale.z = FIELD_DEPTH / FIELD_WIDTH;
     grid.position.y = 0.045;
     grid.material.transparent = true;
     grid.material.opacity = 0.16;
@@ -1722,7 +2081,7 @@ class Battlefield {
     const transform = new THREE.Object3D();
 
     const rockMaterial = standardMaterial(0x797766, { roughness: 1 });
-    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), rockMaterial, 72);
+    const rocks = new THREE.InstancedMesh(new THREE.DodecahedronGeometry(1, 1), rockMaterial, 72 * MAP_SCALE ** 2);
     rocks.receiveShadow = true;
     for (let i = 0; i < rocks.count; i++) {
       const x = (random() - 0.5) * (FIELD_WIDTH - 5);
@@ -1742,7 +2101,7 @@ class Battlefield {
 
     const scrubMaterial = standardMaterial(0x75805c, { roughness: 1 });
     const scrubGeometry = new THREE.ConeGeometry(0.55, 1.25, 5);
-    const scrub = new THREE.InstancedMesh(scrubGeometry, scrubMaterial, 120);
+    const scrub = new THREE.InstancedMesh(scrubGeometry, scrubMaterial, 120 * MAP_SCALE ** 2);
     for (let i = 0; i < scrub.count; i++) {
       const x = (random() - 0.5) * (FIELD_WIDTH - 3);
       const z = (random() - 0.5) * (FIELD_DEPTH - 5);
@@ -1760,7 +2119,7 @@ class Battlefield {
     this.scene.add(scrub);
 
     const ridgeMaterial = standardMaterial(0x687362, { roughness: 1 });
-    const ridges = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7, 2), ridgeMaterial, 18);
+    const ridges = new THREE.InstancedMesh(new THREE.ConeGeometry(1, 1, 7, 2), ridgeMaterial, 18 * MAP_SCALE);
     for (let i = 0; i < ridges.count; i++) {
       const angle = (i / ridges.count) * Math.PI * 2;
       const height = 13 + random() * 24;
@@ -1790,6 +2149,53 @@ class Battlefield {
       new MissileDefenseTower(this.scene, this.enemyBase, -5.5),
       new MissileDefenseTower(this.scene, this.enemyBase, 5.5),
     ];
+  }
+
+  updateCameraPosition() {
+    this.camera.position.setFromSpherical(this.cameraSpherical).add(this.cameraTarget);
+    this.camera.lookAt(this.cameraTarget);
+  }
+
+  adjustCamera(control) {
+    if (control === "rotate-left") this.cameraSpherical.theta -= 0.14;
+    else if (control === "rotate-right") this.cameraSpherical.theta += 0.14;
+    else if (control === "tilt-up") this.cameraSpherical.phi = Math.max(0.24, this.cameraSpherical.phi - 0.08);
+    else if (control === "tilt-down") this.cameraSpherical.phi = Math.min(1.38, this.cameraSpherical.phi + 0.08);
+    else if (control === "zoom-in") this.cameraSpherical.radius = Math.max(34, this.cameraSpherical.radius * 0.85);
+    else if (control === "zoom-out") this.cameraSpherical.radius = Math.min(MAX_CAMERA_DISTANCE, this.cameraSpherical.radius / 0.85);
+    else if (control === "reset") {
+      this.cameraTarget.set(0, 0, 0);
+      this.cameraSpherical.set(160, 0.78, 0);
+    }
+    this.updateCameraPosition();
+  }
+
+  beginCameraDrag(event, type) {
+    event.preventDefault();
+    this.cameraDrag = { pointerId: event.pointerId, type, x: event.clientX, y: event.clientY };
+    this.renderer.domElement.setPointerCapture(event.pointerId);
+  }
+
+  moveCameraDrag(event) {
+    if (!this.cameraDrag || event.pointerId !== this.cameraDrag.pointerId) return;
+    const deltaX = event.clientX - this.cameraDrag.x;
+    const deltaY = event.clientY - this.cameraDrag.y;
+    this.cameraDrag.x = event.clientX;
+    this.cameraDrag.y = event.clientY;
+    if (this.cameraDrag.type === "orbit") {
+      this.cameraSpherical.theta -= deltaX * 0.006;
+      this.cameraSpherical.phi = THREE.MathUtils.clamp(this.cameraSpherical.phi + deltaY * 0.005, 0.24, 1.38);
+    } else {
+      this.camera.updateMatrixWorld();
+      const right = new THREE.Vector3().setFromMatrixColumn(this.camera.matrix, 0).setY(0).normalize();
+      const forward = this.cameraTarget.clone().sub(this.camera.position).setY(0).normalize();
+      const scale = this.cameraSpherical.radius * 0.0015;
+      this.cameraTarget.addScaledVector(right, -deltaX * scale);
+      this.cameraTarget.addScaledVector(forward, deltaY * scale);
+      this.cameraTarget.x = THREE.MathUtils.clamp(this.cameraTarget.x, -FIELD_WIDTH / 2, FIELD_WIDTH / 2);
+      this.cameraTarget.z = THREE.MathUtils.clamp(this.cameraTarget.z, -FIELD_DEPTH / 2, FIELD_DEPTH / 2);
+    }
+    this.updateCameraPosition();
   }
 
   createUnitMenu() {
@@ -1928,10 +2334,30 @@ class Battlefield {
   }
 
   bindEvents() {
-    this.renderer.domElement.addEventListener("pointerdown", (event) => {
-      if (event.button !== 0) return;
-      this.deployAtPointer(event);
+    const canvas = this.renderer.domElement;
+    canvas.addEventListener("pointerdown", (event) => {
+      if (event.button === 2) this.beginCameraDrag(event, "orbit");
+      else if (event.button === 1 || (event.button === 0 && event.shiftKey)) this.beginCameraDrag(event, "pan");
+      else if (event.button === 0) this.deployAtPointer(event);
     });
+    canvas.addEventListener("contextmenu", (event) => event.preventDefault());
+    canvas.addEventListener("wheel", (event) => {
+      event.preventDefault();
+      this.cameraSpherical.radius = THREE.MathUtils.clamp(
+        this.cameraSpherical.radius * Math.exp(event.deltaY * 0.001),
+        34,
+        MAX_CAMERA_DISTANCE,
+      );
+      this.updateCameraPosition();
+    }, { passive: false });
+    window.addEventListener("pointermove", (event) => this.moveCameraDrag(event));
+    window.addEventListener("pointerup", (event) => {
+      if (event.pointerId === this.cameraDrag?.pointerId) this.cameraDrag = null;
+    });
+    window.addEventListener("pointercancel", () => { this.cameraDrag = null; });
+    for (const button of document.querySelectorAll("[data-camera]")) {
+      button.addEventListener("click", () => this.adjustCamera(button.dataset.camera));
+    }
     $("messagePrimary").addEventListener("click", () => {
       if (this.mode === "defeat") {
         this.loadLevel(this.levelIndex);
@@ -2062,9 +2488,24 @@ class Battlefield {
         tank: 0x954d3d,
         scout: 0xb2664d,
         artillery: 0x805047,
+        tankDestroyer: 0x815345,
+        armoredCar: 0x80634c,
+        heavyTank: 0x76504a,
+        mortarCarrier: 0x805047,
+        lightTank: 0x954d3d,
+        mobileAA: 0x80634c,
+        recoveryVehicle: 0x826047,
+        siegeTank: 0x76504a,
+        tankHunter: 0x805047,
+        mobileCommand: 0x826047,
+        amphibiousRecon: 0x5c8180,
+        attackDrone: 0xa55d4c,
+        destroyer: 0x986557,
+        howitzer: 0x805047,
         ifv: 0x8c5142,
         apc: 0x865044,
         mlrs: 0x76504a,
+        heavyMlrs: 0x76504a,
         engineer: 0x826047,
         sam: 0x80634c,
         helicopter: 0xa1513f,
@@ -2075,13 +2516,18 @@ class Battlefield {
         submarine: 0x85584f,
       };
       const strength = this.level.enemyStrength;
+      const enemyUpgradeLevel = Math.min(MAX_WEAPON_UPGRADE_LEVEL, Math.floor(this.levelIndex / 3));
       config = {
         ...baseConfig,
         hp: Math.round(baseConfig.hp * strength),
         damage: Math.round(baseConfig.damage * strength),
-        cooldown: baseConfig.cooldown * Math.pow(0.96, this.levelIndex),
+        cooldown: baseConfig.cooldown * Math.pow(0.96, this.levelIndex) * Math.pow(0.86, enemyUpgradeLevel),
         ...(baseConfig.secondaryCooldown
-          ? { secondaryCooldown: baseConfig.secondaryCooldown * Math.pow(0.96, this.levelIndex) }
+          ? {
+            secondaryCooldown: baseConfig.secondaryCooldown
+              * Math.pow(0.96, this.levelIndex)
+              * Math.pow(0.86, enemyUpgradeLevel),
+          }
           : {}),
         ...(baseConfig.secondaryDamage
           ? { secondaryDamage: Math.round(baseConfig.secondaryDamage * strength) }
@@ -2115,7 +2561,6 @@ class Battlefield {
     this.playerBase.resetHealth(PLAYER_BASE_HEALTH + index * PLAYER_BASE_HEALTH_INCREASE);
     for (const tower of this.missileDefenseTowers) tower.resetHealth(this.camera);
     this.scene.background.setHex(this.level.sky);
-    if (this.scene.fog) this.scene.fog.color.setHex(this.level.sky);
     this.setWeather(this.level.weather ?? "clear");
     const snowCovered = !this.level.ocean && this.level.weather === "snow";
     this.ground.material.map = this.level.ocean
@@ -2138,7 +2583,11 @@ class Battlefield {
     this.updateSelectionHint();
 
     for (const spawn of this.level.enemies) {
-      this.spawnUnit(spawn.type, "enemy", new THREE.Vector3(spawn.x, 0, spawn.z));
+      this.spawnUnit(
+        spawn.type,
+        "enemy",
+        new THREE.Vector3(spawn.x * MAP_SCALE, 0, spawn.z * MAP_SCALE),
+      );
     }
     this.refreshHud();
   }
@@ -2153,15 +2602,8 @@ class Battlefield {
 
     const preset = WEATHER_PRESETS[weather];
     if (weather !== "clear" && !preset) throw new RangeError(`Unknown weather: ${weather}`);
-    if (this.level.ocean) {
-      this.scene.fog = null;
-    } else {
-      if (!this.scene.fog) this.scene.fog = new THREE.Fog(this.level.sky, 95, 190);
-      this.scene.fog.color.setHex(this.level.sky);
-      this.scene.fog.near = preset?.fogNear ?? 95;
-      this.scene.fog.far = preset?.fogFar ?? 190;
-    }
-    if (!preset || (this.level.ocean && weather === "fog")) return;
+    this.scene.fog = null;
+    if (!preset) return;
 
     const positions = new Float32Array(preset.count * 3);
     for (let i = 0; i < preset.count; i++) {
@@ -2248,16 +2690,16 @@ class Battlefield {
 
     this.reinforcementTimer -= interval;
     this.reinforcementWave++;
-    const landTypes = ["tank", "artillery", "scout", "ifv", "apc", "mlrs", "engineer", "helicopter", "reconDrone", "fighterJet", "amphibious", "sam"];
-    const oceanTypes = ["carrier", "submarine", "fighterJet", "helicopter", "reconDrone", "amphibious"];
+    const landTypes = ["tank", "artillery", "tankDestroyer", "armoredCar", "heavyTank", "mortarCarrier", "lightTank", "mobileAA", "recoveryVehicle", "siegeTank", "tankHunter", "mobileCommand", "howitzer", "scout", "ifv", "apc", "mlrs", "heavyMlrs", "engineer", "helicopter", "reconDrone", "attackDrone", "fighterJet", "amphibious", "amphibiousRecon", "sam"];
+    const oceanTypes = ["carrier", "submarine", "destroyer", "fighterJet", "helicopter", "reconDrone", "attackDrone", "amphibious", "amphibiousRecon"];
     const types = this.level.ocean ? oceanTypes : landTypes;
     const availableSlots = MAX_UNITS_PER_TEAM - this.getActiveUnitCount("enemy");
     const groupSize = Math.min(3, 1 + Math.floor((this.reinforcementWave - 1) / 5), availableSlots);
     for (let i = 0; i < groupSize; i++) {
       const type = types[(this.reinforcementWave + i - 1) % types.length];
       const formationSlot = this.reinforcementWave * 2 + i * 3;
-      const x = (formationSlot % 5 - 2) * 10;
-      const z = -31 - ((this.reinforcementWave + i) % 3) * 4;
+      const x = (formationSlot % 7 - 3) * 15 * MAP_SCALE;
+      const z = (-45 - ((this.reinforcementWave + i) % 3) * 7) * MAP_SCALE;
       this.spawnUnit(type, "enemy", new THREE.Vector3(x, 0, z));
     }
     this.refreshHud();
@@ -2514,6 +2956,7 @@ class Battlefield {
   }
 
   updateUnitExhaust(unit, delta) {
+    const isB52 = unit.config.id === "b52";
     unit.exhaustTimer -= delta;
     if (unit.exhaustTimer > 0) return;
 
@@ -2524,10 +2967,9 @@ class Battlefield {
       && unit.driftIntensity > 0.18;
     const moving = unit.movementSpeed > 0.5;
     const heavyPlume = weatherActive || snowDrifting;
-    const isB52 = unit.config.id === "b52";
     const isFighterJet = unit.config.id === "fighterJet";
     unit.exhaustTimer = isB52
-      ? moving ? 0.36 : 0.72
+      ? 0.015
       : snowDrifting ? 0.16 : weatherActive ? (moving ? 0.17 : 0.4) : moving ? 0.22 : 0.72;
 
     for (const outlet of unit.exhaustPorts) {
@@ -2549,15 +2991,6 @@ class Battlefield {
 
   spawnB52Exhaust(position, velocity, moving, heavyPlume) {
     const layers = [
-      {
-        color: 0xb5bfbd,
-        size: heavyPlume ? 0.17 : 0.14,
-        growth: heavyPlume ? 0.2 : 0.14,
-        stretch: 2.8,
-        opacity: heavyPlume ? 0.32 : 0.3,
-        life: 0.42,
-        speed: 0.72,
-      },
       {
         color: heavyPlume ? 0x9ca39e : 0x858d89,
         size: heavyPlume ? 0.36 : 0.24,

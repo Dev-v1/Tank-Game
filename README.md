@@ -1,17 +1,21 @@
 # Ironclad: Field Command
 
 A build-free, browser-based 3D strategy prototype. Select a tank, scout,
-artillery unit, SAM launcher, helicopter, fighter jet, or B-52 Stratofortress,
-then click your side of the battlefield to deploy it. Units automatically
-engage nearby enemies and attack the opposing base. Defend your own base across
-a 33-sector campaign.
+artillery unit, tank destroyer, armored scout car, heavy tank, mortar carrier,
+light tank, mobile anti-aircraft gun, armored recovery vehicle, siege tank,
+tank hunter, mobile command vehicle, amphibious reconnaissance vehicle,
+armed reconnaissance drone, guided missile destroyer, self-propelled howitzer,
+heavy rocket artillery, SAM launcher, helicopter, fighter jet, or B-52
+Stratofortress, then click your side of the 240-by-360
+battlefield to deploy it. Units automatically engage nearby enemies and attack
+the opposing base. Defend your own base across a 33-sector campaign.
 
 ## Play
 
 - Select a unit card, then click on the green side of the field to deploy.
 - Units automatically choose nearby hostiles, move into range, and fire.
 - Destroy the enemy base to capture the sector; protect your base from enemy
-  attackers. Surviving units carry into the next sector. You can field up to 10
+  attackers. Surviving units carry into the next sector. You can field up to 20
   active units at once.
 - The campaign has 33 sectors, with larger enemy forces and stronger units
   and tougher bases as you advance. Your base starts with 900 health and gains
@@ -24,14 +28,17 @@ a 33-sector campaign.
   sector completes the campaign; losing your base lets you retry the sector or
   restart the campaign.
 - Victories award credits, which you can spend in the field workshop to increase
-  the selected vehicle's weapon rate. Upgrades are specific to each vehicle
-  type and are saved in this browser.
-- Fighter jets drop bombs, aircraft carriers fire smoke-trailing missiles, and
-  submarines launch torpedoes from their bow tubes. Both ships also use mounted
+  the selected vehicle's weapon rate, up to 10 upgrade levels. Upgrades are
+  specific to each vehicle type and are saved in this browser. Enemy weapons
+  also improve as the campaign advances; the B-52 remains player-only.
+- Rotate the camera with right-drag or the on-screen rotate/tilt controls. Zoom
+  with the mouse wheel or zoom buttons. Pan with middle-drag or Shift + left-drag.
+- Fighter jets drop bombs, aircraft carriers and destroyers fire missiles, and
+  submarines launch torpedoes from their bow tubes. Naval units also use mounted
   guns in combat. Ocean battles take place in sectors 5, 13, 14, 18, and 19.
   Land units deploy on land, naval units deploy at sea, and aircraft can deploy
   on land or launch from your deployed aircraft carrier in ocean battles.
-  Deploy a carrier before selecting a helicopter or fighter jet at sea.
+  Deploy a carrier before selecting aircraft at sea.
   Submarines deploy and fight alongside the carrier fleet.
 - The player-only B-52 Stratofortress is available in all 33 sectors. Its eight
   engines emit exhaust, and its underside bay carries up to four guided
