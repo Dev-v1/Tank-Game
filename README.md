@@ -47,6 +47,21 @@ the opposing base. Defend your own base across a 33-sector campaign.
 - SAM launchers use smoke-trailing missiles against all enemy vehicle types.
   Both sides use them in land battles from sector 2 onward.
 
+## Online PvP
+
+- Select **ONLINE PvP**, host a match, and share the displayed room code with
+  the other player. The other player enters that code and selects **JOIN MATCH**.
+- Each player has their own vehicle selection and can deploy any vehicle in the
+  full roster on their side of the battlefield. The first player to destroy
+  the opposing base wins.
+- Online rooms use PeerJS's public signaling service to connect browsers, so
+  both players need an internet connection. No game backend or account is
+  required. Share room codes only with the intended opponent.
+- Online PvP is separate from the campaign: campaign balance, credits,
+  upgrades, and vehicle settings are unchanged. Weapon upgrades are disabled
+  during PvP matches. Entering or leaving PvP restarts the current campaign
+  battle, including units deployed in that battle.
+
 ## Project structure
 
 ```text

@@ -1,4 +1,5 @@
 import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js";
+import Peer from "https://cdn.jsdelivr.net/npm/peerjs@1.5.4/+esm";
 
 const MAP_SCALE = 2;
 const MAX_CAMERA_DISTANCE = 480;
@@ -1838,6 +1839,13 @@ class Battlefield {
     this.credits = 0;
     this.weaponUpgradeLevels = Object.fromEntries(UNIT_CATALOG.map((unit) => [unit.id, 0]));
     this.progressWarning = false;
+    this.peer = null;
+    this.peerConnection = null;
+    this.pvpActive = false;
+    this.pvpRole = null;
+    this.campaignLevelIndex = null;
+    this.nextNetworkUnitId = 1;
+    this.networkSnapshotTimer = 0;
     this.loadProgress();
     this.levelIndex = 0;
     this.mode = "battle";
@@ -2232,6 +2240,7 @@ class Battlefield {
   }
 
   isUnitAvailable(config) {
+    if (this.pvpActive) return true;
     if (!this.level) return true;
     return this.level.ocean ? config.domain !== "land" : config.domain !== "water";
   }
@@ -2257,6 +2266,14 @@ class Battlefield {
 
   refreshWeaponWorkshop() {
     if (!$("weaponInfo")) return;
+    if (this.pvpActive) {
+      $("credits").textContent = String(this.credits);
+      $("workshopUnit").textContent = this.selectedUnit.name.toUpperCase();
+      $("weaponInfo").textContent = "WEAPON UPGRADES ARE NOT USED IN ONLINE PvP.";
+      $("rateUpgrade").textContent = "UNAVAILABLE IN ONLINE PvP";
+      $("rateUpgrade").disabled = true;
+      return;
+    }
     const level = this.weaponUpgradeLevels[this.selectedUnit.id];
     const config = this.getUpgradedConfig(this.selectedUnit);
     const cost = WEAPON_UPGRADE_BASE_COST + level * 120;
@@ -2333,6 +2350,301 @@ class Battlefield {
     this.showToast(`${this.selectedUnit.name.toUpperCase()} WEAPON RATE UPGRADED`);
   }
 
+  openMultiplayerDialog() {
+    if (this.pvpActive) {
+      if (window.confirm("Leave the online match and return to the campaign?")) {
+        this.endMultiplayerMatch();
+      }
+      return;
+    }
+    if (this.peer) {
+      $("multiplayerDialog").hidden = false;
+      return;
+    }
+    $("multiplayerDialog").hidden = false;
+    $("multiplayerRoom").hidden = true;
+    $("multiplayerLobbyActions").hidden = false;
+    $("multiplayerStatus").textContent = "Host a match and share its room code, or enter the other player's code to join. Both players can deploy every vehicle. The current campaign battle restarts when you enter or leave PvP.";
+  }
+
+  hostMultiplayerMatch() {
+    if (this.peer) return;
+    $("multiplayerStatus").textContent = "Connecting to the online room service…";
+    $("multiplayerLobbyActions").hidden = true;
+    this.mode = "lobby";
+    this.peer = new Peer();
+    this.peer.on("open", (roomId) => {
+      $("roomCode").textContent = roomId;
+      $("multiplayerRoom").hidden = false;
+      $("multiplayerStatus").textContent = "Waiting for the other player to join. Share the room code above.";
+    });
+    this.peer.on("connection", (connection) => {
+      if (this.peerConnection) {
+        connection.close();
+        return;
+      }
+      this.attachPeerConnection(connection, "host");
+    });
+    this.peer.on("error", (error) => this.handlePeerError(error));
+  }
+
+  joinMultiplayerMatch() {
+    if (this.peer) return;
+    const roomId = $("roomCodeInput").value.trim();
+    if (!roomId) {
+      this.showToast("ENTER THE HOST'S ROOM CODE");
+      return;
+    }
+    $("multiplayerStatus").textContent = "Connecting to the host…";
+    $("multiplayerLobbyActions").hidden = true;
+    this.mode = "lobby";
+    this.peer = new Peer();
+    this.peer.on("open", () => {
+      const connection = this.peer.connect(roomId, { reliable: true });
+      this.attachPeerConnection(connection, "guest");
+    });
+    this.peer.on("error", (error) => this.handlePeerError(error));
+  }
+
+  attachPeerConnection(connection, role) {
+    this.peerConnection = connection;
+    connection.on("open", () => {
+      if (role === "guest") {
+        $("multiplayerStatus").textContent = "Connected. Waiting for the host to start the match…";
+        this.sendNetworkMessage({ type: "ready" });
+      }
+    });
+    connection.on("data", (message) => this.handleNetworkMessage(message));
+    connection.on("close", () => {
+      if (this.pvpActive) {
+        this.showToast("OTHER PLAYER DISCONNECTED");
+        this.endMultiplayerMatch(false);
+      } else {
+        this.peerConnection = null;
+        this.mode = "battle";
+        $("multiplayerStatus").textContent = "Connection closed. Try another room code.";
+        $("multiplayerLobbyActions").hidden = false;
+        $("multiplayerRoom").hidden = true;
+      }
+    });
+    connection.on("error", (error) => this.handlePeerError(error));
+    if (role === "host") {
+      connection.on("open", () => {
+        $("multiplayerStatus").textContent = "Player connected. Starting the match…";
+      });
+    }
+  }
+
+  handlePeerError(error) {
+    console.error("Online multiplayer connection failed.", error);
+    this.showToast("ONLINE CONNECTION FAILED — CHECK THE ROOM CODE AND TRY AGAIN");
+    $("multiplayerStatus").textContent = "Connection failed. Check the room code and try again.";
+    $("multiplayerLobbyActions").hidden = false;
+    $("multiplayerRoom").hidden = true;
+    if (this.peer) {
+      this.peer.destroy();
+      this.peer = null;
+    }
+    this.peerConnection = null;
+  }
+
+  copyRoomCode() {
+    const roomId = $("roomCode").textContent;
+    if (!roomId) return;
+    if (!navigator.clipboard?.writeText) {
+      this.showToast("SELECT THE ROOM CODE TO COPY IT");
+      return;
+    }
+    navigator.clipboard.writeText(roomId).then(
+      () => this.showToast("ROOM CODE COPIED"),
+      (error) => {
+        console.error("Could not copy the online room code.", error);
+        this.showToast("COPY FAILED — SELECT THE ROOM CODE TO COPY IT");
+      },
+    );
+  }
+
+  sendNetworkMessage(message) {
+    if (!this.peerConnection?.open) return false;
+    this.peerConnection.send(message);
+    return true;
+  }
+
+  handleNetworkMessage(message) {
+    if (!message || typeof message !== "object") return;
+    if (message.type === "ready" && this.pvpRole !== "guest" && !this.pvpActive) {
+      this.startMultiplayerMatch("host");
+      this.sendNetworkMessage({ type: "start" });
+    } else if (message.type === "start" && this.pvpRole !== "host" && !this.pvpActive) {
+      this.startMultiplayerMatch("guest");
+    } else if (message.type === "deploy" && this.pvpRole === "host" && this.pvpActive) {
+      this.handleRemoteDeployment(message);
+    } else if (message.type === "state" && this.pvpRole === "guest" && this.pvpActive) {
+      this.applyNetworkSnapshot(message);
+    } else if (message.type === "result" && this.pvpRole === "guest" && this.pvpActive) {
+      this.finishGame(message.result === "victory" ? "defeat" : "victory", true);
+    } else if (message.type === "deployRejected" && this.pvpRole === "guest") {
+      this.showToast("DEPLOYMENT REJECTED — FORCE LIMIT REACHED");
+    } else if (message.type === "end" && this.pvpActive) {
+      this.endMultiplayerMatch(false);
+    }
+  }
+
+  startMultiplayerMatch(role) {
+    this.campaignLevelIndex = this.levelIndex;
+    this.pvpActive = true;
+    this.pvpRole = role;
+    this.nextNetworkUnitId = 1;
+    this.networkSnapshotTimer = 0;
+    $("multiplayerDialog").hidden = true;
+    this.loadLevel(0);
+    this.playerBase.resetHealth(PLAYER_BASE_HEALTH);
+    this.enemyBase.resetHealth(PLAYER_BASE_HEALTH);
+    for (const tower of this.missileDefenseTowers) tower.resetHealth(this.camera);
+    $("levelLabel").textContent = "ONLINE PvP";
+    $("levelCounter").textContent = "PvP";
+    $("sectorName").textContent = "Online Arena";
+    $("missionBrief").textContent = "Deploy any vehicle and destroy the opposing player's base.";
+    $("objectiveName").textContent = "OPPONENT BASE";
+    $("battleStatus").textContent = "ONLINE MATCH";
+    const guest = role === "guest";
+    $("enemyBaseLabel").textContent = guest ? "YOUR BASE" : "HOSTILE BASE";
+    $("playerBaseLabel").textContent = guest ? "HOSTILE BASE" : "YOUR BASE";
+    $("yourForceLabel").textContent = "YOUR FORCE";
+    $("hostileForceLabel").textContent = "OPPONENT";
+    if (guest) this.cameraSpherical.theta = Math.PI;
+    this.updateCameraPosition();
+    this.refreshUnitMenu();
+    this.updateSelectionHint();
+    this.refreshHud();
+    this.refreshWeaponWorkshop();
+    this.sendMultiplayerSnapshot(0.1);
+  }
+
+  handleRemoteDeployment(message) {
+    const config = UNIT_CATALOG.find((unit) => unit.id === message.unitId);
+    if (!config || !Number.isFinite(message.x) || !Number.isFinite(message.z)
+      || message.z >= DEPLOYMENT_LINE_Z || Math.abs(message.x) > FIELD_WIDTH / 2 - 2
+      || !this.isUnitAvailable(config)) return;
+    if (this.getActiveUnitCount("enemy") >= MAX_UNITS_PER_TEAM) {
+      this.sendNetworkMessage({ type: "deployRejected" });
+      return;
+    }
+    const position = new THREE.Vector3(message.x, 0, message.z);
+    let carrier = null;
+    let launchOffset = null;
+    if (this.level.ocean && config.domain === "air" && config.id !== "b52") {
+      carrier = this.units.find((unit) => unit.netId === message.carrierId
+        && unit.team === "enemy" && unit.config.id === "carrier" && unit.hp > 0);
+      if (!carrier || !Array.isArray(message.launchOffset) || message.launchOffset.length !== 3
+        || !message.launchOffset.every(Number.isFinite)) return;
+      launchOffset = new THREE.Vector3(...message.launchOffset);
+    }
+    this.spawnUnit(config.id, "enemy", position, carrier, launchOffset);
+    this.refreshHud();
+  }
+
+  sendMultiplayerSnapshot(delta) {
+    if (!this.pvpActive || this.pvpRole !== "host" || !this.peerConnection?.open) return;
+    this.networkSnapshotTimer += delta;
+    if (this.networkSnapshotTimer < 0.1) return;
+    this.networkSnapshotTimer = 0;
+    this.sendNetworkMessage({
+      type: "state",
+      units: this.units.map((unit) => ({
+        id: unit.netId,
+        type: unit.config.id,
+        team: unit.team,
+        x: unit.root.position.x,
+        y: unit.root.position.y,
+        z: unit.root.position.z,
+        rotation: unit.root.rotation.y,
+        hp: unit.hp,
+        cooldown: unit.cooldownRemaining,
+        secondaryCooldown: unit.secondaryCooldownRemaining,
+        supportCooldown: unit.supportCooldownRemaining,
+      })),
+      playerBaseHp: this.playerBase.hp,
+      enemyBaseHp: this.enemyBase.hp,
+      towerHp: this.missileDefenseTowers.map((tower) => tower.hp),
+    });
+  }
+
+  applyNetworkSnapshot(snapshot) {
+    if (!Array.isArray(snapshot.units) || !Array.isArray(snapshot.towerHp)) return;
+    const receivedIds = new Set();
+    for (const state of snapshot.units) {
+      if (!Number.isSafeInteger(state.id) || !UNIT_CATALOG.some((unit) => unit.id === state.type)
+        || !["player", "enemy"].includes(state.team)
+        || ![state.x, state.y, state.z, state.rotation, state.hp, state.cooldown,
+          state.secondaryCooldown, state.supportCooldown].every(Number.isFinite)) continue;
+      receivedIds.add(state.id);
+      let unit = this.units.find((candidate) => candidate.netId === state.id);
+      if (!unit) {
+        unit = this.spawnUnit(state.type, state.team, new THREE.Vector3(state.x, state.y, state.z));
+        if (!unit) continue;
+        unit.netId = state.id;
+      }
+      unit.root.position.set(state.x, state.y, state.z);
+      unit.root.rotation.y = state.rotation;
+      unit.hp = state.hp;
+      unit.cooldownRemaining = state.cooldown;
+      unit.secondaryCooldownRemaining = state.secondaryCooldown;
+      unit.supportCooldownRemaining = state.supportCooldown;
+      unit.updateHealthBar(this.camera);
+    }
+    for (const unit of [...this.units]) {
+      if (!receivedIds.has(unit.netId)) this.onUnitDestroyed(unit);
+    }
+    if (Number.isFinite(snapshot.playerBaseHp)) this.playerBase.hp = snapshot.playerBaseHp;
+    if (Number.isFinite(snapshot.enemyBaseHp)) this.enemyBase.hp = snapshot.enemyBaseHp;
+    snapshot.towerHp.forEach((hp, index) => {
+      const tower = this.missileDefenseTowers[index];
+      if (!tower || !Number.isFinite(hp)) return;
+      tower.hp = hp;
+      tower.root.visible = hp > 0;
+      tower.healthBar.group.visible = hp > 0;
+      tower.updateHealthBar(this.camera);
+    });
+    this.refreshHud();
+  }
+
+  endMultiplayerMatch(notifyOpponent = true) {
+    const campaignLevel = this.campaignLevelIndex ?? 0;
+    if (notifyOpponent) this.sendNetworkMessage({ type: "end" });
+    this.pvpActive = false;
+    this.pvpRole = null;
+    if (this.peerConnection) this.peerConnection.close();
+    if (this.peer) this.peer.destroy();
+    this.peerConnection = null;
+    this.peer = null;
+    this.clearMultiplayerLabels();
+    this.campaignLevelIndex = null;
+    $("missionMessage").hidden = true;
+    $("multiplayerDialog").hidden = true;
+    this.cameraSpherical.theta = 0;
+    this.updateCameraPosition();
+    this.loadLevel(campaignLevel);
+  }
+
+  clearMultiplayerLabels() {
+    $("enemyBaseLabel").textContent = "HOSTILE BASE";
+    $("playerBaseLabel").textContent = "YOUR BASE";
+    $("yourForceLabel").textContent = "YOUR FORCE";
+    $("hostileForceLabel").textContent = "HOSTILES";
+  }
+
+  closeMultiplayerDialog() {
+    if (this.pvpActive) this.endMultiplayerMatch();
+    else {
+      if (this.peer) this.peer.destroy();
+      this.peer = null;
+      this.peerConnection = null;
+      $("multiplayerDialog").hidden = true;
+      this.mode = "battle";
+    }
+  }
+
   bindEvents() {
     const canvas = this.renderer.domElement;
     canvas.addEventListener("pointerdown", (event) => {
@@ -2359,6 +2671,10 @@ class Battlefield {
       button.addEventListener("click", () => this.adjustCamera(button.dataset.camera));
     }
     $("messagePrimary").addEventListener("click", () => {
+      if (this.pvpActive) {
+        this.endMultiplayerMatch();
+        return;
+      }
       if (this.mode === "defeat") {
         this.loadLevel(this.levelIndex);
       } else if (this.mode === "victory" && this.levelIndex < LEVELS.length - 1) {
@@ -2369,11 +2685,17 @@ class Battlefield {
     });
     $("messageSecondary").addEventListener("click", () => this.loadLevel(0));
     $("rateUpgrade").addEventListener("click", () => this.purchaseWeaponUpgrade());
+    $("multiplayerButton").addEventListener("click", () => this.openMultiplayerDialog());
+    $("hostMatchButton").addEventListener("click", () => this.hostMultiplayerMatch());
+    $("joinMatchButton").addEventListener("click", () => this.joinMultiplayerMatch());
+    $("copyRoomCodeButton").addEventListener("click", () => this.copyRoomCode());
+    $("closeMultiplayerButton").addEventListener("click", () => this.closeMultiplayerDialog());
     window.addEventListener("resize", () => this.resize());
   }
 
   deployAtPointer(event) {
     if (this.mode !== "battle") return;
+    const team = this.getLocalTeam();
     const bounds = this.renderer.domElement.getBoundingClientRect();
     this.pointer.set(
       ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
@@ -2384,12 +2706,15 @@ class Battlefield {
     if (!intersection) return;
 
     const point = intersection.point;
-    if (point.z < DEPLOYMENT_LINE_Z || Math.abs(point.x) > FIELD_WIDTH / 2 - 2) {
+    const onOpponentSide = team === "player"
+      ? point.z < DEPLOYMENT_LINE_Z
+      : point.z > DEPLOYMENT_LINE_Z;
+    if (onOpponentSide || Math.abs(point.x) > FIELD_WIDTH / 2 - 2) {
       this.showToast("DEPLOY UNITS ON YOUR SIDE OF THE FIELD");
       return;
     }
 
-    if (this.getActiveUnitCount("player") >= MAX_UNITS_PER_TEAM) {
+    if (this.getActiveUnitCount(team) >= MAX_UNITS_PER_TEAM) {
       this.showToast(`FORCE LIMIT: ${MAX_UNITS_PER_TEAM} ACTIVE UNITS`);
       return;
     }
@@ -2398,7 +2723,7 @@ class Battlefield {
     let position = new THREE.Vector3(point.x, 0, point.z);
     let launchOffset = null;
     if (this.level.ocean && this.selectedUnit.domain === "air" && this.selectedUnit.id !== "b52") {
-      const carriers = this.units.filter((unit) => unit.team === "player"
+      const carriers = this.units.filter((unit) => unit.team === team
         && unit.config.id === "carrier" && unit.hp > 0);
       if (carriers.length === 0) {
         this.showToast("DEPLOY AN AIRCRAFT CARRIER BEFORE LAUNCHING AIRCRAFT");
@@ -2406,7 +2731,7 @@ class Battlefield {
       }
       carriers.sort((a, b) => a.root.position.distanceToSquared(position) - b.root.position.distanceToSquared(position));
       carrier = carriers[0];
-      const launchedCount = this.units.filter((unit) => unit.team === "player"
+      const launchedCount = this.units.filter((unit) => unit.team === team
         && unit.carrier === carrier && unit.carrierLaunch).length;
       launchOffset = new THREE.Vector3(
         launchedCount % 2 === 0 ? -1.6 : 1.6,
@@ -2416,7 +2741,22 @@ class Battlefield {
       position = carrier.root.position.clone().add(launchOffset);
       position.y = 1.2;
     }
-    const unit = this.spawnUnit(this.selectedUnit.id, "player", position, carrier, launchOffset);
+    if (this.pvpActive && this.pvpRole === "guest") {
+      const sent = this.sendNetworkMessage({
+        type: "deploy",
+        unitId: this.selectedUnit.id,
+        x: position.x,
+        z: position.z,
+        carrierId: carrier?.netId ?? null,
+        launchOffset: launchOffset ? launchOffset.toArray() : null,
+      });
+      this.showToast(sent
+        ? `${this.selectedUnit.name.toUpperCase()} DEPLOYMENT SENT`
+        : "ONLINE CONNECTION LOST — REJOIN TO DEPLOY");
+      return;
+    }
+
+    const unit = this.spawnUnit(this.selectedUnit.id, team, position, carrier, launchOffset);
     if (!unit) {
       this.showToast(`FORCE LIMIT: ${MAX_UNITS_PER_TEAM} ACTIVE UNITS`);
       return;
@@ -2473,8 +2813,16 @@ class Battlefield {
     return this.units.filter((unit) => unit.team === team && unit.hp > 0).length;
   }
 
+  getLocalTeam() {
+    return this.pvpActive && this.pvpRole === "guest" ? "enemy" : "player";
+  }
+
+  getOpponentTeam() {
+    return this.getLocalTeam() === "player" ? "enemy" : "player";
+  }
+
   spawnUnit(typeId, team, position, carrier = null, launchOffset = null) {
-    if (team === "enemy" && typeId === "b52") {
+    if (team === "enemy" && typeId === "b52" && !this.pvpActive) {
       throw new Error("The B-52 Stratofortress is player-only.");
     }
     const baseConfig = UNIT_CATALOG.find((unit) => unit.id === typeId);
@@ -2482,8 +2830,8 @@ class Battlefield {
     if (!baseConfig || !UnitType) throw new Error(`Unknown unit type: ${typeId}`);
     if (this.getActiveUnitCount(team) >= MAX_UNITS_PER_TEAM) return null;
 
-    let config = team === "player" ? this.getUpgradedConfig(baseConfig) : baseConfig;
-    if (team === "enemy") {
+    let config = team === "player" && !this.pvpActive ? this.getUpgradedConfig(baseConfig) : baseConfig;
+    if (team === "enemy" && !this.pvpActive) {
       const enemyColors = {
         tank: 0x954d3d,
         scout: 0xb2664d,
@@ -2539,6 +2887,7 @@ class Battlefield {
 
     const spawnPosition = carrier ? position : this.findOpenSpawnPosition(position, typeId, team);
     const unit = new UnitType(this.scene, config, spawnPosition, team, carrier, launchOffset);
+    unit.netId = this.nextNetworkUnitId++;
     this.units.push(unit);
     return unit;
   }
@@ -2582,7 +2931,7 @@ class Battlefield {
     this.refreshUnitMenu();
     this.updateSelectionHint();
 
-    for (const spawn of this.level.enemies) {
+    for (const spawn of this.pvpActive ? [] : this.level.enemies) {
       this.spawnUnit(
         spawn.type,
         "enemy",
@@ -2659,15 +3008,18 @@ class Battlefield {
   }
 
   refreshHud() {
-    const playerCount = this.units.filter((unit) => unit.team === "player" && unit.hp > 0).length;
-    const enemyCount = this.units.filter((unit) => unit.team === "enemy" && unit.hp > 0).length;
+    const ownTeam = this.getLocalTeam();
+    const playerCount = this.units.filter((unit) => unit.team === ownTeam && unit.hp > 0).length;
+    const enemyCount = this.units.filter((unit) => unit.team !== ownTeam && unit.hp > 0).length;
     $("deployedCount").textContent = String(playerCount).padStart(2, "0");
     $("deployedSummary").textContent = String(playerCount);
     $("hostileCount").textContent = String(enemyCount);
-    $("enemyBaseText").textContent = `${Math.ceil(this.enemyBase.hp)} / ${this.enemyBase.maxHp}`;
-    $("playerBaseText").textContent = `${Math.ceil(this.playerBase.hp)} / ${this.playerBase.maxHp}`;
-    $("enemyBaseBar").style.width = `${(this.enemyBase.hp / this.enemyBase.maxHp) * 100}%`;
-    $("playerBaseBar").style.width = `${(this.playerBase.hp / this.playerBase.maxHp) * 100}%`;
+    const ownBase = ownTeam === "player" ? this.playerBase : this.enemyBase;
+    const hostileBase = ownTeam === "player" ? this.enemyBase : this.playerBase;
+    $("enemyBaseText").textContent = `${Math.ceil(hostileBase.hp)} / ${hostileBase.maxHp}`;
+    $("playerBaseText").textContent = `${Math.ceil(ownBase.hp)} / ${ownBase.maxHp}`;
+    $("enemyBaseBar").style.width = `${(hostileBase.hp / hostileBase.maxHp) * 100}%`;
+    $("playerBaseBar").style.width = `${(ownBase.hp / ownBase.maxHp) * 100}%`;
     this.enemyBase.updateHealthBar(this.camera);
     this.playerBase.updateHealthBar(this.camera);
   }
@@ -2680,6 +3032,7 @@ class Battlefield {
   }
 
   updateEnemyReinforcements(delta) {
+    if (this.pvpActive) return;
     if (this.getActiveUnitCount("enemy") >= MAX_UNITS_PER_TEAM) {
       this.reinforcementTimer = 0;
       return;
@@ -3331,12 +3684,25 @@ class Battlefield {
     while (this.projectiles.length) this.removeProjectile(this.projectiles.length - 1);
   }
 
-  finishGame(result) {
+  finishGame(result, fromNetwork = false) {
     if (this.mode !== "battle") return;
+    if (this.pvpActive && this.pvpRole !== "host" && !fromNetwork) return;
     this.mode = result;
     this.clearProjectiles();
     $("missionMessage").hidden = false;
-    $("messageSecondary").hidden = result !== "defeat";
+    $("messageSecondary").hidden = this.pvpActive || result !== "defeat";
+
+    if (this.pvpActive) {
+      if (this.pvpRole === "host") this.sendNetworkMessage({ type: "result", result });
+      $("battleStatus").textContent = result === "victory" ? "ONLINE VICTORY" : "ONLINE DEFEAT";
+      $("messageEyebrow").textContent = "ONLINE PvP";
+      $("messageTitle").textContent = result === "victory" ? "Victory" : "Defeat";
+      $("messageCopy").textContent = result === "victory"
+        ? "The opposing base has been destroyed."
+        : "Your base has been destroyed.";
+      $("messagePrimary").textContent = "RETURN TO CAMPAIGN";
+      return;
+    }
 
     if (result === "victory") {
       const reward = 300 + this.levelIndex * 50;
@@ -3385,6 +3751,7 @@ class Battlefield {
       for (const unit of this.units) unit.update(delta, this);
       this.updateMissileDefense(delta);
       this.updateProjectiles(delta);
+      this.sendMultiplayerSnapshot(delta);
       for (const tower of this.missileDefenseTowers) tower.updateHealthBar(this.camera);
       this.enemyBase.updateHealthBar(this.camera);
       this.playerBase.updateHealthBar(this.camera);

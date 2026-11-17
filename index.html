@@ -48,6 +48,12 @@
       .brand-name span { color: var(--lime); }
       .brand-caption { margin-top: 4px; color: var(--muted); font: 9px "DM Mono", monospace; letter-spacing: .18em; }
       .top-meta { display: flex; align-items: center; gap: 24px; }
+      .multiplayer-button {
+        min-height: 32px; padding: 0 10px; border: 1px solid var(--lime);
+        background: rgba(215, 240, 106, .08); color: var(--lime);
+        font: 9px "DM Mono", monospace; cursor: pointer;
+      }
+      .multiplayer-button:hover { background: var(--lime); color: #172019; }
       .status { display: flex; align-items: center; gap: 8px; color: var(--muted); font: 10px "DM Mono", monospace; letter-spacing: .13em; }
       .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--lime); box-shadow: 0 0 12px var(--lime); }
       .counter { padding: 9px 12px; border: 1px solid var(--line); background: rgba(9, 15, 13, .52); color: var(--muted); font: 10px "DM Mono", monospace; }
@@ -143,6 +149,25 @@
         backdrop-filter: blur(14px);
       }
       .mission-message[hidden] { display: none; }
+      .multiplayer-dialog {
+        position: fixed; z-index: 5; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        width: min(420px, calc(100vw - 32px)); padding: 24px; border: 1px solid var(--line);
+        background: rgba(12, 19, 17, .97); box-shadow: 0 25px 90px rgba(0, 0, 0, .45);
+        backdrop-filter: blur(14px);
+      }
+      .multiplayer-dialog[hidden] { display: none; }
+      .multiplayer-title { margin: 8px 0; font: 800 30px/.95 "Barlow Condensed", sans-serif; letter-spacing: .04em; }
+      .multiplayer-copy { color: var(--muted); font-size: 11px; line-height: 1.6; }
+      .multiplayer-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .multiplayer-actions input {
+        flex: 1 1 190px; min-width: 0; min-height: 40px; padding: 0 10px;
+        border: 1px solid var(--line); background: rgba(255, 255, 255, .05);
+        color: var(--ink); font: 11px "DM Mono", monospace;
+      }
+      .multiplayer-room { margin-top: 14px; padding: 12px; border: 1px solid var(--line); overflow-wrap: anywhere; }
+      .multiplayer-room[hidden] { display: none; }
+      .multiplayer-room code { color: var(--lime); font: 12px "DM Mono", monospace; user-select: all; }
+      .multiplayer-dialog .action-button.secondary { margin: 16px 0 0; }
       .message-title { margin: 8px 0; font: 800 36px/.95 "Barlow Condensed", sans-serif; letter-spacing: .04em; text-transform: uppercase; }
       .message-copy { margin: 10px 0 18px; color: var(--muted); font-size: 12px; line-height: 1.6; }
       .action-button {
@@ -156,6 +181,7 @@
         .topbar { height: 62px; padding: 0 14px; }
         .brand-caption, .status { display: none; }
         .top-meta { gap: 6px; }
+        .multiplayer-button { min-height: 28px; padding: 0 6px; font-size: 7px; }
         .counter { padding: 7px 6px; font-size: 8px; }
         .side-panel { top: 76px; left: 12px; width: 220px; padding: 13px; }
         .upgrade-panel { top: 76px; right: 10px; width: min(205px, calc(100vw - 245px)); padding: 10px; }
@@ -195,6 +221,7 @@
       </div>
       <div class="top-meta">
         <div class="status"><span class="status-dot"></span><span id="battleStatus">DEPLOYMENT LIVE</span></div>
+        <button class="multiplayer-button" id="multiplayerButton" type="button">ONLINE PvP</button>
         <div class="counter">CREDITS&nbsp; <b id="credits">0</b></div>
         <div class="counter">SECTOR&nbsp; <b id="levelCounter">01 / 33</b></div>
         <div class="counter">UNITS&nbsp; <b id="deployedCount">00</b></div>
@@ -214,15 +241,15 @@
         </div>
       </div>
       <div class="base-stat">
-        <div class="base-stat-label"><span>HOSTILE BASE</span><strong id="enemyBaseText">—</strong></div>
+        <div class="base-stat-label"><span id="enemyBaseLabel">HOSTILE BASE</span><strong id="enemyBaseText">—</strong></div>
         <div class="meter enemy"><span id="enemyBaseBar"></span></div>
       </div>
       <div class="base-stat">
-        <div class="base-stat-label"><span>YOUR BASE</span><strong id="playerBaseText">—</strong></div>
+        <div class="base-stat-label"><span id="playerBaseLabel">YOUR BASE</span><strong id="playerBaseText">—</strong></div>
         <div class="meter"><span id="playerBaseBar"></span></div>
       </div>
       <div class="separator"></div>
-      <div class="deployment-status">YOUR FORCE <strong id="deployedSummary">0</strong> ACTIVE<br>HOSTILES <strong id="hostileCount">0</strong> REMAINING</div>
+      <div class="deployment-status"><span id="yourForceLabel">YOUR FORCE</span> <strong id="deployedSummary">0</strong> ACTIVE<br><span id="hostileForceLabel">HOSTILES</span> <strong id="hostileCount">0</strong> REMAINING</div>
     </aside>
 
     <aside class="upgrade-panel" aria-label="Weapon upgrade workshop">
@@ -249,6 +276,22 @@
       <button type="button" data-camera="zoom-in" aria-label="Zoom in">ZOOM +</button>
       <button type="button" data-camera="reset" aria-label="Reset camera">RESET VIEW</button>
     </nav>
+    <section class="multiplayer-dialog" id="multiplayerDialog" role="dialog" aria-modal="true" aria-labelledby="multiplayerTitle" hidden>
+      <div class="eyebrow">ONLINE BATTLE</div>
+      <h2 class="multiplayer-title" id="multiplayerTitle">PLAYER VS PLAYER</h2>
+      <p class="multiplayer-copy" id="multiplayerStatus">Host a match and share its room code, or enter the other player's code to join. Both players can deploy every vehicle. The current campaign battle restarts when you enter or leave PvP.</p>
+      <div class="multiplayer-actions" id="multiplayerLobbyActions">
+        <button class="action-button" id="hostMatchButton" type="button">HOST MATCH</button>
+        <input id="roomCodeInput" type="text" autocomplete="off" spellcheck="false" aria-label="Room code" placeholder="Enter room code">
+        <button class="action-button" id="joinMatchButton" type="button">JOIN MATCH</button>
+      </div>
+      <div class="multiplayer-room" id="multiplayerRoom" hidden>
+        <div class="eyebrow">SHARE THIS ROOM CODE</div>
+        <p><code id="roomCode"></code></p>
+        <button class="action-button secondary" id="copyRoomCodeButton" type="button">COPY CODE</button>
+      </div>
+      <button class="action-button secondary" id="closeMultiplayerButton" type="button">CLOSE</button>
+    </section>
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <section class="mission-message" id="missionMessage" role="dialog" aria-modal="true" aria-labelledby="messageTitle" hidden>
       <div class="eyebrow" id="messageEyebrow">SECTOR SECURED</div>
@@ -258,6 +301,6 @@
       <button class="action-button secondary" id="messageSecondary" type="button" hidden>RETRY SECTOR</button>
     </section>
 
-    <script type="module" src="./main.js?v=expanded-vehicle-roster-3"></script>
+    <script type="module" src="./main.js?v=online-pvp-1"></script>
   </body>
 </html>
